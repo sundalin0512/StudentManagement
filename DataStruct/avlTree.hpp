@@ -2,7 +2,8 @@
 
 #include "Queue.hpp"
 #include "Stack.hpp"
-#include "String.h"
+#include "../MyString/MyString.h"
+
 
 
 namespace Sdalin {
@@ -50,16 +51,15 @@ namespace Sdalin {
 		}
 
 	private:
-		int Hash(Value& value);
+		int Hash()
+		{
+			return value.Hash();
+		}
 	};
 
-	int Pair<int, int>::Hash(int& value)
+	int Pair<int, int>::Hash()
 	{
 		return value;
-	}
-	int Pair<int, String>::Hash(String& value)
-	{
-		return value.Hash();
 	}
 
 	template <class Key, class Value = Key, class T = Pair<Key, Value>>

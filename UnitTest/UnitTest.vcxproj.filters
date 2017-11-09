@@ -26,22 +26,16 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="unittest1.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="ListTest.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="StorageIOTest.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="StorageTest.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="TreeTest.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="vectorTest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="FileTest.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

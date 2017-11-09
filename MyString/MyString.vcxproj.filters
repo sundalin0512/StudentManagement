@@ -18,7 +18,7 @@
     <ClInclude Include="RefCount.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="String.h">
+    <ClInclude Include="MyString.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -26,7 +26,7 @@
     <ClCompile Include="RefCount.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="String.cpp">
+    <ClCompile Include="MyString.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{AF6B8DCC-AB76-433E-8EA6-89172FB61027}</ProjectGuid>
     <RootNamespace>MyString</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -111,11 +111,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="String.h" />
+    <ClInclude Include="MyString.h" />
     <ClInclude Include="RefCount.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="String.cpp" />
+    <ClCompile Include="MyString.cpp" />
     <ClCompile Include="RefCount.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
