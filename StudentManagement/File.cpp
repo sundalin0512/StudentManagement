@@ -1,6 +1,8 @@
 #include "File.h"
+#include "avlTree.hpp"
 namespace Sdalin
 {
+
 	struct FileInfo
 	{
 		size_t fileSize;			// 0x00 文件大小

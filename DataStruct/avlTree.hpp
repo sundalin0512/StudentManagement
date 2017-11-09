@@ -5,7 +5,63 @@
 
 
 namespace Sdalin {
-	template<class T>
+	template<class _Ty = void>
+	struct less
+	{	// functor for operator<
+
+		constexpr bool operator()(const _Ty& _Left, const _Ty& _Right) const
+		{	// apply operator< to operands
+			return (_Left < _Right);
+		}
+	};
+
+	template <class Key, class Value>
+	class Pair
+	{
+	public:
+		Key key;
+		Value value;
+		Pair() {}
+		Pair(Value value)
+		{
+			this->value = value;
+			key = value;
+		}
+		bool operator ==(const Pair& other) const
+		{
+			return key == other.key && value == other.value;
+		}
+		bool operator >(const Pair& other) const
+		{
+			return key > other.key && value > other.value;
+		}
+		bool operator <(const Pair& other) const
+		{
+			return key < other.key && value < other.value;
+		}
+		operator Value()
+		{
+			return value;
+		}
+		operator Value() const
+		{
+			return value;
+		}
+
+	private:
+		int hash(Value value);
+	};
+
+	int Pair<int, int>::hash(const int value)
+	{
+		return value;
+	}
+	int Pair<int, char*>::hash(char* value)
+	{
+		return 0;
+	}
+
+	template <class Key, class Value = Key, class T = Pair<Key, Value>>
 	class avlTree
 	{
 		//using T = int;
@@ -138,7 +194,7 @@ namespace Sdalin {
 			}
 			m_size++;
 			balance(node);
-			while(!balanceNodes.empty())
+			while (!balanceNodes.empty())
 			{
 				balance(balanceNodes.top());
 				balanceNodes.pop();
@@ -151,7 +207,7 @@ namespace Sdalin {
 			if (node == nullptr)
 				return false;
 			Node* enbalanceNode = erase(node);
-			while(m_root!= enbalanceNode)
+			while (m_root != enbalanceNode)
 			{
 				enbalanceNode = balance(enbalanceNode)->m_parent;
 			}

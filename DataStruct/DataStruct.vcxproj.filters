@@ -15,21 +15,25 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="File.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="File.h">
+    <ClInclude Include="List.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="types.h">
+    <ClInclude Include="Vector.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="UnusedFileTree.h">
+    <ClInclude Include="Stack.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Queue.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Deque.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Tree.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="avlTree.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

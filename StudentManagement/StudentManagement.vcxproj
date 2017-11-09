@@ -75,8 +75,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\MyString;..\DataStruct</AdditionalIncludeDirectories>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>DataStruct.lib;MyString.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -116,15 +120,9 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Include\avlTree.hpp" />
-    <ClInclude Include="..\Include\Deque.hpp" />
-    <ClInclude Include="..\Include\List.hpp" />
-    <ClInclude Include="..\Include\Queue.hpp" />
-    <ClInclude Include="..\Include\Stack.hpp" />
-    <ClInclude Include="..\Include\Tree.hpp" />
-    <ClInclude Include="..\Include\Vector.hpp" />
     <ClInclude Include="File.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="UnusedFileTree.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
