@@ -2,18 +2,19 @@
 
 #include "Queue.hpp"
 #include "Stack.hpp"
+#include "String.h"
 
 
 namespace Sdalin {
-	template<class _Ty = void>
-	struct less
-	{	// functor for operator<
+	//template<class _Ty = void>
+	//struct less
+	//{	// functor for operator<
 
-		constexpr bool operator()(const _Ty& _Left, const _Ty& _Right) const
-		{	// apply operator< to operands
-			return (_Left < _Right);
-		}
-	};
+	//	constexpr bool operator()(const _Ty& _Left, const _Ty& _Right) const
+	//	{	// apply operator< to operands
+	//		return (_Left < _Right);
+	//	}
+	//};
 
 	template <class Key, class Value>
 	class Pair
@@ -25,7 +26,7 @@ namespace Sdalin {
 		Pair(Value value)
 		{
 			this->value = value;
-			key = value;
+			key = Hash(value);
 		}
 		bool operator ==(const Pair& other) const
 		{
@@ -49,16 +50,16 @@ namespace Sdalin {
 		}
 
 	private:
-		int hash(Value value);
+		int Hash(Value& value);
 	};
 
-	int Pair<int, int>::hash(const int value)
+	int Pair<int, int>::Hash(int& value)
 	{
 		return value;
 	}
-	int Pair<int, char*>::hash(char* value)
+	int Pair<int, String>::Hash(String& value)
 	{
-		return 0;
+		return value.Hash();
 	}
 
 	template <class Key, class Value = Key, class T = Pair<Key, Value>>

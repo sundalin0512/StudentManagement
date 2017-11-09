@@ -111,13 +111,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CMyString.h" />
-    <ClInclude Include="MyString.h" />
+    <ClInclude Include="String.h" />
     <ClInclude Include="RefCount.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CMyString.cpp" />
-    <ClCompile Include="MyString.cpp" />
+    <ClCompile Include="String.cpp" />
     <ClCompile Include="RefCount.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

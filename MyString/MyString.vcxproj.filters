@@ -15,24 +15,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MyString.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CMyString.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="RefCount.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="String.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MyString.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="CMyString.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="RefCount.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="String.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
