@@ -24,7 +24,7 @@ namespace Sdalin
 
 		size_t GetSize() const;
 
-		void SetLength(size_t length);
+		void SetLength(size_t m_length);
 
 		size_t GetLength() const;
 

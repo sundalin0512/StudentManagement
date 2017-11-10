@@ -20,7 +20,7 @@ namespace Sdalin {
 	template <class Key, class Value>
 	class Pair
 	{
-	public:
+		public:
 		Key key;
 		Value value;
 		Pair() {}
@@ -50,7 +50,7 @@ namespace Sdalin {
 			return value;
 		}
 
-	private:
+		private:
 		int Hash()
 		{
 			return value.Hash();
@@ -66,7 +66,7 @@ namespace Sdalin {
 	class avlTree
 	{
 		//using T = int;
-	public:
+		public:
 		struct Node
 		{
 			Node* m_parent;
@@ -94,13 +94,13 @@ namespace Sdalin {
 
 			int bfactor() const
 			{
-				return height(m_right) - height(m_left);
+				return nodeHeight(m_right) - nodeHeight(m_left);
 			}
 
 			void fixHeight()
 			{
-				const int lHeight = height(m_left);
-				const int rHeight = height(m_right);
+				const int lHeight = nodeHeight(m_left);
+				const int rHeight = nodeHeight(m_right);
 				m_height = (lHeight > rHeight ? lHeight : rHeight) + 1;
 			}
 
@@ -113,8 +113,8 @@ namespace Sdalin {
 				return m_data;
 			}
 			~Node() = default;
-		private:
-			static int height(Node* p)
+			private:
+			static int nodeHeight(Node* p)
 			{
 				return p != nullptr ? p->m_height : 0;
 			}
@@ -122,7 +122,7 @@ namespace Sdalin {
 		Node* m_root;
 		size_t m_size;
 
-	public:
+		public:
 		avlTree()
 			: m_root(new Node), m_size(0)
 		{
@@ -380,7 +380,7 @@ namespace Sdalin {
 			return retQueue;
 		}
 
-	private:
+		private:
 		//Ö»É¾³ý£¬²»Æ½ºâ
 		Node* erase(Node* node)
 		{
@@ -394,7 +394,12 @@ namespace Sdalin {
 					node->m_data = node->m_right->m_data;
 					node->m_right = node->m_right->m_right;
 					node->m_left = node->m_right->m_left;
+					if (node->m_right->m_right != nullptr)
+						node->m_right->m_right->m_parent = node;
+					if (node->m_right->m_left != nullptr)
+						node->m_right->m_left->m_parent = node;
 					delete node->m_right;
+					node->m_right = nullptr;
 					m_size--;
 					return node;
 				}
@@ -420,8 +425,9 @@ namespace Sdalin {
 			{
 				// max_left_child's parent is node
 				node->m_data = maxLeftNode->m_data;
-				node->m_right = maxLeftNode->m_right;
 				node->m_left = maxLeftNode->m_left;
+				if (maxLeftNode->m_left != nullptr)
+					maxLeftNode->m_left->m_parent = node;
 				retNode = maxLeftNode->m_parent;
 				delete maxLeftNode;
 			}
@@ -430,7 +436,8 @@ namespace Sdalin {
 				// max_left_child's parent is not node
 				node->m_data = maxLeftNode->m_data;
 				maxLeftNode->m_parent->m_right = maxLeftNode->m_left;
-				maxLeftNode->m_left->m_parent = maxLeftNode->m_parent;
+				if (maxLeftNode->m_left != nullptr)
+					maxLeftNode->m_left->m_parent = maxLeftNode->m_parent;
 				retNode = maxLeftNode->m_parent;
 				delete maxLeftNode;
 			}
