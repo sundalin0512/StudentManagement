@@ -4,7 +4,7 @@ namespace Sdalin
 	class RefCount
 	{
 	private:
-		friend class String; //不分公有私有
+		friend class String; 
 		RefCount(void *refBuffer)
 		{
 			this->refBuffer = refBuffer;

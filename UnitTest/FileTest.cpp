@@ -14,9 +14,9 @@ namespace FileTest
 		{
 			//文件成功生成
 			FileBase file("test1.bin",true);
-			file.write(0, "123", 4);
+			file._write(0, "123", 4);
 			char c[4];
-			file.read(0, c, 4);
+			file._read(0, c, 4);
 			Assert::AreEqual("123", c);
 		}
 
@@ -26,15 +26,15 @@ namespace FileTest
 			//文件重新打开时没有被覆盖
 			{
 				File file("test2.bin",true);
-				file.write(0, "123", 4);
+				file._write(0, "123", 4);
 				char c[4];
-				file.read(0, c, 4);
+				file._read(0, c, 4);
 				Assert::AreEqual("123", c);
 			}
 			{
 				File file("test2.bin");
 				char c[4];
-				file.read(0, c, 4);
+				file._read(0, c, 4);
 				Assert::AreEqual("123", c);
 			}
 		}
@@ -46,7 +46,7 @@ namespace FileTest
 			}
 			UnusedFile file("unusedUnusedFileInit.bin");
 			int c[4];
-			file.read(0, c, 4*sizeof(int));
+			file._read(0, c, 4*sizeof(int));
 			Assert::AreEqual(0, c[0]);
 			Assert::AreEqual(-1, c[1]);
 			Assert::AreEqual(-1, c[2]);
@@ -234,8 +234,6 @@ namespace FileTest
 			file.insert(87, 150);
 			file.insert(130, 190);
 
-
-			size_t offset, length;
 			file.erase(135);
 			Assert::AreEqual(size_t(190), file.readNode(file.m_head.rootNodeOffset).m_length);
 			Assert::AreEqual(size_t(130), file.readNode(file.m_head.rootNodeOffset).m_offset);

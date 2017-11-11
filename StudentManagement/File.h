@@ -24,11 +24,11 @@ namespace Sdalin
 
 		bool open(String fileName, const bool trunc = false);
 
-		bool write(const size_t offsetFromFileStart, const void *buffer, const size_t bytesToWrite);
+		bool _write(const size_t offsetFromFileStart, const void *buffer, const size_t bytesToWrite);
 
-		bool read(const size_t offsetFromFileStart, void *buffer, const size_t bytesToRead);
+		bool _read(const size_t offsetFromFileStart, void *buffer, const size_t bytesToRead);
 
-
+		bool append(const void* buffer, const size_t bytesToWrite, size_t& offsetWrite);
 		protected:
 		fstream stream;
 	};
@@ -80,12 +80,13 @@ namespace Sdalin
 
 		int erase(const size_t offset);
 
-
+		bool query(const size_t offset, size_t& length);
 		private:
 
 		int insert(Node& node);
 
-		int query(const int length);
+		//返回在UsedFile中的偏移
+		int _query(const size_t offset);
 
 
 		//只删除，不平衡
@@ -197,7 +198,7 @@ namespace Sdalin
 		int insert(const size_t offset, const size_t length);
 
 
-		int getEnoughPlace(const size_t length, size_t& rOffset, size_t& rLength);
+		bool getEnoughPlace(const size_t length, size_t& rOffset, size_t& rLength);
 
 
 		private:
@@ -276,6 +277,17 @@ namespace Sdalin
 		File() = delete;
 
 		File(String fileName, const bool trunc = false);
+
+		bool insert(void* data, const size_t size, size_t& offset);
+
+		bool erase(size_t offset);
+
+		bool modify(void* data, const size_t offset, const size_t size, size_t& newOffset);
+
+		bool query(size_t offset, size_t& size);
+
+		bool read(void* data, const size_t offset, const size_t length, size_t& readSize);
+
 		private:
 		UsedFile m_used_file;
 		UnusedFile m_unused_file;

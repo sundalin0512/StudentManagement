@@ -28,7 +28,7 @@ namespace Sdalin
 		return false;
 	}
 
-	bool FileBase::write(const size_t offsetFromFileStart, const void * buffer, const size_t bytesToWrite)
+	bool FileBase::_write(const size_t offsetFromFileStart, const void * buffer, const size_t bytesToWrite)
 	{
 		stream.seekp(offsetFromFileStart);
 		stream.write((char*)buffer, bytesToWrite);
@@ -38,13 +38,20 @@ namespace Sdalin
 		return true;
 	}
 
-	bool FileBase::read(const size_t offsetFromFileStart, void * buffer, const size_t bytesToRead)
+	bool FileBase::_read(const size_t offsetFromFileStart, void * buffer, const size_t bytesToRead)
 	{
 		stream.seekg(offsetFromFileStart);
 		stream.read((char*)buffer, bytesToRead);
 		if (stream.fail() || stream.eof())
 			return false;
 		return true;
+	}
+
+	bool FileBase::append(const void* buffer, const size_t bytesToWrite, size_t& offsetWrite)
+	{
+		stream.seekp(0, fstream::end);
+		offsetWrite = stream.tellp();
+		return _write(offsetWrite, buffer, bytesToWrite);
 	}
 
 	UsedFile::Node::Node() : m_offset(0), m_length(0), m_leftChild(-1), m_rightChild(-1),
@@ -83,10 +90,11 @@ namespace Sdalin
 
 	int UsedFile::erase(const size_t _offset)
 	{
-		int offset = query(_offset);
+		int offset = _query(_offset);
 		if (offset == -1)
 			return -1;
 		Node node = readNode(offset);
+		int ret = node.m_length;
 		int enbalanceNodeOffset = 0;
 		erase(node, enbalanceNodeOffset);
 		Node enbalanceNode = readNode(enbalanceNodeOffset);
@@ -95,7 +103,19 @@ namespace Sdalin
 			enbalanceNodeOffset = balance(enbalanceNode);
 			enbalanceNode = readNode(enbalanceNodeOffset);
 		}
-		return 0;
+		return ret;
+	}
+
+	bool UsedFile::query(const size_t offset, size_t& length)
+	{
+		int fileOffset = _query(offset);
+		length = 0;
+		if (fileOffset != -1)
+		{
+			length = readNode(fileOffset).m_length;
+			return true;
+		}
+		return false;
 	}
 
 	int UsedFile::insert(Node& node)
@@ -166,7 +186,7 @@ namespace Sdalin
 		}
 	}
 
-	int UsedFile::query(const int offset)
+	int UsedFile::_query(const size_t offset)
 	{
 		Node parent = readNode(m_head.rootNodeOffset);
 		if (parent.m_inFileOffset == -1)
@@ -463,7 +483,7 @@ namespace Sdalin
 	{
 		if (offset == -1)
 			return false;
-		return write(offset, &node, Node::size());
+		return _write(offset, &node, Node::size());
 	}
 
 	bool UsedFile::writeNode(const Node& node)
@@ -473,7 +493,7 @@ namespace Sdalin
 
 	bool UsedFile::writeNode(const size_t offset, const EmptyNode& node)
 	{
-		return write(offset, &node, Node::size());
+		return _write(offset, &node, Node::size());
 	}
 
 	UsedFile::Node UsedFile::readNode(const size_t offset)
@@ -490,24 +510,24 @@ namespace Sdalin
 			node.m_inFileOffset = -1;
 			return false;
 		}
-		int ret = read(offset, &node, Node::size());
+		int ret = _read(offset, &node, Node::size());
 		node.m_inFileOffset = offset;
 		return ret;
 	}
 
 	bool UsedFile::readNode(const size_t offset, EmptyNode& node)
 	{
-		return read(offset, &node, Node::size());
+		return _read(offset, &node, Node::size());
 	}
 
 	bool UsedFile::writeHead()
 	{
-		return write(0, &m_head, sizeof(m_head));
+		return _write(0, &m_head, sizeof(m_head));
 	}
 
 	bool UsedFile::readHead()
 	{
-		return read(0, &m_head, sizeof(m_head));
+		return _read(0, &m_head, sizeof(m_head));
 	}
 
 	int UsedFile::writeFirstNode(const size_t offset, const size_t length)
@@ -726,11 +746,11 @@ namespace Sdalin
 		}
 	}
 
-	int UnusedFile::getEnoughPlace(const size_t length, size_t& rOffset, size_t& rLength)
+	bool UnusedFile::getEnoughPlace(const size_t length, size_t& rOffset, size_t& rLength)
 	{
 		int offset = query_length(length);
 		if (offset == -1)
-			return -1;
+			return false;
 		Node node = readNode(offset);
 		rOffset = node.m_offset;
 		rLength = node.m_length;
@@ -749,7 +769,7 @@ namespace Sdalin
 			enbalanceNodeOffset_offset = balance_offset(enbalanceNode_offset);
 			enbalanceNode_offset = readNode(enbalanceNodeOffset_offset);
 		}
-		return 0;
+		return true;
 	}
 
 	int UnusedFile::query_length(const int length)
@@ -1314,7 +1334,7 @@ namespace Sdalin
 	{
 		if (offset == -1)
 			return false;
-		return write(offset, &node, Node::size());
+		return _write(offset, &node, Node::size());
 	}
 
 	bool UnusedFile::writeNode(const Node& node)
@@ -1324,7 +1344,7 @@ namespace Sdalin
 
 	bool UnusedFile::writeNode(const size_t offset, const EmptyNode& node)
 	{
-		return write(offset, &node, Node::size());
+		return _write(offset, &node, Node::size());
 	}
 
 	UnusedFile::Node UnusedFile::readNode(const size_t offset)
@@ -1341,24 +1361,24 @@ namespace Sdalin
 			node.m_inFileOffset = -1;
 			return false;
 		}
-		int ret = read(offset, &node, Node::size());
+		int ret = _read(offset, &node, Node::size());
 		node.m_inFileOffset = offset;
 		return ret;
 	}
 
 	bool UnusedFile::readNode(const size_t offset, EmptyNode& node)
 	{
-		return read(offset, &node, Node::size());
+		return _read(offset, &node, Node::size());
 	}
 
 	bool UnusedFile::writeHead()
 	{
-		return write(0, &m_head, sizeof(m_head));
+		return _write(0, &m_head, sizeof(m_head));
 	}
 
 	bool UnusedFile::readHead()
 	{
-		return read(0, &m_head, sizeof(m_head));
+		return _read(0, &m_head, sizeof(m_head));
 	}
 
 	int UnusedFile::writeFirstNode(const size_t offset, const size_t length)
@@ -1387,7 +1407,7 @@ namespace Sdalin
 		if (node.m_height_offset == height)
 			return;
 		node.m_height_offset = height;
-		write(node.m_inFileOffset + int(Node::OFFSET::m_height_offset) * 4, &height, sizeof(int));
+		_write(node.m_inFileOffset + int(Node::OFFSET::m_height_offset) * 4, &height, sizeof(int));
 	}
 
 	void UnusedFile::fixHeight_length(Node& node)
@@ -1398,7 +1418,7 @@ namespace Sdalin
 		if (node.m_height_length == height)
 			return;
 		node.m_height_length = height;
-		write(node.m_inFileOffset + int(Node::OFFSET::m_height_length) * 4, &height, sizeof(int));
+		_write(node.m_inFileOffset + int(Node::OFFSET::m_height_length) * 4, &height, sizeof(int));
 	}
 
 	int UnusedFile::nodeHeight_offset(int m_offset)
@@ -1406,7 +1426,7 @@ namespace Sdalin
 		int ret;
 		if (m_offset == -1)
 			return 0;
-		read(m_offset + int(Node::OFFSET::m_height_offset) * 4, &ret, sizeof(int));
+		_read(m_offset + int(Node::OFFSET::m_height_offset) * 4, &ret, sizeof(int));
 		return ret;
 	}
 
@@ -1415,7 +1435,7 @@ namespace Sdalin
 		int ret;
 		if (m_offset == -1)
 			return 0;
-		read(m_offset + int(Node::OFFSET::m_height_length) * 4, &ret, sizeof(int));
+		_read(m_offset + int(Node::OFFSET::m_height_length) * 4, &ret, sizeof(int));
 		return ret;
 	}
 
@@ -1427,4 +1447,67 @@ namespace Sdalin
 
 	}
 
+	bool File::insert(void* data, const size_t size, size_t& offset)
+	{
+		size_t length = 0;
+		if (m_unused_file.getEnoughPlace(size, offset, length))
+		{
+			if (length > size)
+				m_unused_file.insert(offset + size, length - size);
+			m_used_file.insert(offset, size);
+			if (!_write(offset, data, size))
+				return false;
+		}
+		else
+		{
+			if (!append(data, size, offset))
+				return false;
+			m_used_file.insert(offset, size);
+		}
+		return true;
+	}
+
+	bool File::erase(size_t offset)
+	{
+		int length = m_used_file.erase(offset);
+		if (length > 0)
+		{
+			m_unused_file.insert(offset, length);
+			return true;
+		}
+		return false;
+	}
+
+	bool File::modify(void* data, const size_t offset, const size_t size, size_t& newOffset)
+	{
+		if (erase(offset))
+		{
+			if(insert(data, size, newOffset))
+				return true;
+		}
+		return false;
+	}
+
+	bool File::query(size_t offset, size_t& size)
+	{
+		if (m_used_file.query(offset, size))
+		{
+			return true;
+		}
+		return false;
+	}
+
+	bool File::read(void* data, const size_t offset, const size_t length, size_t& readSize)
+	{
+		if (m_used_file.query(offset, readSize))
+		{
+			if (length < readSize)
+				_read(offset, data, length);
+			else
+				_read(offset, data, readSize);
+
+			return true;
+		}
+		return false;
+	}
 }
