@@ -1,4 +1,5 @@
 #include "File.h"
+#include "../DataStruct/Stack.hpp"
 
 namespace Sdalin
 {
@@ -46,16 +47,504 @@ namespace Sdalin
 		return true;
 	}
 
-	UsedFile::UsedFile(String fileName, const bool trunc)
-		: FileBase(fileName, trunc)
+	UsedFile::Node::Node() : m_offset(0), m_length(0), m_leftChild(-1), m_rightChild(-1),
+		m_parent(-1), m_height(0), m_inFileOffset(-1)
 	{
+	}
 
+	UsedFile::Node::Node(const size_t offset, const size_t length) : Node()
+	{
+		m_offset = offset;
+		m_length = length;
+	}
+
+	size_t UsedFile::Node::size()
+	{
+		return sizeof(Node) - sizeof(size_t);
+	}
+
+	UsedFile::UsedFile(String fileName, const bool trunc) : FileBase(fileName, trunc), m_head{ 0,-1,-1 }
+	{
+		if (trunc)
+			writeHead();
+		else
+			readHead();
+	}
+
+	bool UsedFile::empty() const
+	{
+		return m_head.nodeSize == 0;
+	}
+
+	int UsedFile::insert(const size_t offset, const size_t length)
+	{
+		return insert(Node(offset, length));
+	}
+
+	int UsedFile::erase(const size_t _offset)
+	{
+		int offset = query(_offset);
+		if (offset == -1)
+			return -1;
+		Node node = readNode(offset);
+		int enbalanceNodeOffset = 0;
+		erase(node, enbalanceNodeOffset);
+		Node enbalanceNode = readNode(enbalanceNodeOffset);
+		while (enbalanceNode.m_inFileOffset != -1)
+		{
+			enbalanceNodeOffset = balance(enbalanceNode);
+			enbalanceNode = readNode(enbalanceNodeOffset);
+		}
+		return 0;
+	}
+
+	int UsedFile::insert(Node& node)
+	{
+		const int length = node.m_offset;
+		if (length <= 0)
+			throw "invalid length";
+
+		if (empty())
+		{
+			insertNewNode(node);
+			m_head.rootNodeOffset = node.m_inFileOffset;
+			writeHead();
+			return node.m_inFileOffset;
+		}
+		else
+		{
+			Node thisNode = readNode(m_head.rootNodeOffset);
+			Node nextNode = thisNode;
+			Stack<int> balanceNodesOffset;
+			while (nextNode.m_offset != -1)
+			{
+				thisNode = nextNode;
+				balanceNodesOffset.push(thisNode.m_inFileOffset);
+				if (thisNode.m_offset == length)
+				{
+					if (thisNode.m_leftChild != -1)
+						nextNode = readNode(thisNode.m_leftChild);
+					else
+						nextNode.m_offset = -1; //用length=-1来标记结束
+				}
+				else if (thisNode.m_offset > length)
+				{
+					if (thisNode.m_leftChild != -1)
+						nextNode = readNode(thisNode.m_leftChild);
+					else
+						nextNode.m_offset = -1; //用length=-1来标记结束
+				}
+				else if (thisNode.m_offset < length)
+				{
+					if (thisNode.m_rightChild != -1)
+						nextNode = readNode(thisNode.m_rightChild);
+					else
+						nextNode.m_offset = -1; //用length=-1来标记结束
+				}
+			}
+			insertNewNode(node);
+			if (thisNode.m_offset > length)
+			{
+				node.m_parent = thisNode.m_inFileOffset;
+				thisNode.m_leftChild = node.m_inFileOffset;
+			}
+			else if (thisNode.m_offset < length)
+			{
+				node.m_parent = thisNode.m_inFileOffset;
+				thisNode.m_rightChild = node.m_inFileOffset;
+			}
+			writeNode(node);
+			writeNode(thisNode);
+			writeHead();
+			balance(node);
+			while (!balanceNodesOffset.empty())
+			{
+				balance(readNode(balanceNodesOffset.top()));
+				balanceNodesOffset.pop();
+			}
+			return node.m_inFileOffset;
+		}
+	}
+
+	int UsedFile::query(const int offset)
+	{
+		Node parent = readNode(m_head.rootNodeOffset);
+		if (parent.m_inFileOffset == -1)
+			return -1;
+		Node nextNode = parent;
+		while (nextNode.m_inFileOffset != -1)
+		{
+			parent = nextNode;
+			if (parent.m_offset == offset)
+			{
+				return parent.m_inFileOffset;
+			}
+			else if (parent.m_offset > offset)
+			{
+				nextNode = readNode(parent.m_leftChild);
+			}
+			else if (parent.m_offset < offset)
+			{
+				nextNode = readNode(parent.m_rightChild);
+			}
+		}
+		return -1;
+	}
+
+	void UsedFile::erase(Node node, int& offset)
+	{
+		Node maxLeftNode = readNode(node.m_leftChild);
+		if (maxLeftNode.m_inFileOffset == -1)
+		{
+			if (node.m_rightChild != -1)
+			{
+				// node only has right child
+				Node right = readNode(node.m_rightChild);
+
+				if (node.m_inFileOffset == m_head.rootNodeOffset)
+				{
+					right.m_parent = -1;
+					m_head.rootNodeOffset = right.m_inFileOffset;
+				}
+				else
+				{
+					right.m_parent = node.m_parent;
+					Node parent = readNode(node.m_parent);
+					if (parent.m_leftChild == node.m_inFileOffset)
+						parent.m_leftChild = right.m_inFileOffset;
+					else
+						parent.m_rightChild = right.m_inFileOffset;
+					writeNode(parent);
+				}
+				writeNode(right);
+				offset = right.m_inFileOffset;
+				goto End;
+			}
+			else
+			{
+				// node is leaf node
+				Node parent = readNode(node.m_parent);
+				if (node.m_inFileOffset == parent.m_leftChild)
+					parent.m_leftChild = -1;
+				else
+					parent.m_rightChild = -1;
+				writeNode(parent);
+				offset = parent.m_inFileOffset;
+				goto End;
+			}
+		}
+		while (maxLeftNode.m_rightChild != -1)
+		{
+			// search max left child
+			maxLeftNode = readNode(maxLeftNode.m_rightChild);
+		}
+		if (maxLeftNode.m_parent == node.m_inFileOffset)
+		{
+			// max_left_child's parent is node
+			Node parent = readNode(node.m_parent);
+			maxLeftNode.m_parent = parent.m_inFileOffset;
+			if (node.m_inFileOffset == parent.m_leftChild)
+				parent.m_leftChild = maxLeftNode.m_inFileOffset;
+			else
+				parent.m_rightChild = maxLeftNode.m_inFileOffset;
+			maxLeftNode.m_rightChild = node.m_rightChild;
+			if (maxLeftNode.m_rightChild != -1)
+			{
+				Node right = readNode(maxLeftNode.m_rightChild);
+				right.m_parent = maxLeftNode.m_inFileOffset;
+				writeNode(right);
+			}
+			writeNode(maxLeftNode);
+			if (parent.m_inFileOffset != -1)
+			{
+				writeNode(parent);
+				offset = parent.m_inFileOffset;
+			}
+			else
+			{
+				m_head.rootNodeOffset = maxLeftNode.m_inFileOffset;
+				offset = m_head.rootNodeOffset;
+			}
+		}
+		else
+		{
+			// max_left_child's parent is not node
+			Node parent = readNode(maxLeftNode.m_parent);
+			Node left = readNode(maxLeftNode.m_leftChild);
+			left.m_parent = maxLeftNode.m_parent;
+			parent.m_rightChild = left.m_inFileOffset;
+
+			maxLeftNode.m_leftChild = node.m_leftChild;
+			maxLeftNode.m_rightChild = node.m_rightChild;
+			Node nodeLeft = readNode(node.m_leftChild);
+			Node nodeRight = readNode(node.m_rightChild);
+			if (nodeLeft.m_inFileOffset == parent.m_inFileOffset)
+				nodeLeft = parent;
+			nodeLeft.m_parent = maxLeftNode.m_inFileOffset;
+			nodeRight.m_parent = maxLeftNode.m_inFileOffset;
+
+			Node nodeParent = readNode(node.m_parent);
+			maxLeftNode.m_parent = nodeParent.m_inFileOffset;
+			if (node.m_inFileOffset == nodeParent.m_leftChild)
+				nodeParent.m_leftChild = maxLeftNode.m_inFileOffset;
+			else
+				nodeParent.m_rightChild = maxLeftNode.m_inFileOffset;
+
+			writeNode(maxLeftNode);
+			writeNode(parent);
+			if (left.m_inFileOffset != -1)
+				writeNode(left);
+			writeNode(nodeLeft);
+			if (nodeRight.m_inFileOffset != -1)
+				writeNode(nodeRight);
+			if (nodeParent.m_inFileOffset != -1)
+			{
+				writeNode(nodeParent);
+			}
+			else
+			{
+				m_head.rootNodeOffset = maxLeftNode.m_inFileOffset;
+			}
+			offset = parent.m_inFileOffset;
+		}
+	End:
+		EmptyNode* emptyNode = (EmptyNode*)&node;
+		memset(emptyNode, 0, Node::size());
+		emptyNode->nextNodeOffset = m_head.firstEmptyNodeOffset;
+		m_head.firstEmptyNodeOffset = node.m_inFileOffset;
+		writeNode(node);
+		m_head.nodeSize--;
+		writeHead();
+	}
+
+	int UsedFile::lRotate(Node& node)
+	{
+		Node pNode = readNode(node.m_rightChild);
+		node.m_rightChild = pNode.m_leftChild;
+
+		if (pNode.m_leftChild == -1)
+		{
+			Node tmp = readNode(pNode.m_leftChild);
+			tmp.m_parent = node.m_inFileOffset;
+			writeNode(tmp);
+		}
+
+		pNode.m_parent = node.m_parent;
+
+		if (node.m_parent == -1)
+		{
+			m_head.rootNodeOffset = pNode.m_inFileOffset;
+		}
+		else if (node.m_inFileOffset == readNode(node.m_parent).m_leftChild)
+		{
+			Node tmp = readNode(node.m_parent);
+			tmp.m_leftChild = pNode.m_inFileOffset;
+			writeNode(tmp);
+		}
+		else
+		{
+			Node tmp = readNode(node.m_parent);
+			tmp.m_rightChild = pNode.m_inFileOffset;
+			writeNode(tmp);
+		}
+
+		pNode.m_leftChild = node.m_inFileOffset;
+		node.m_parent = pNode.m_inFileOffset;
+		fixHeight(node);
+		fixHeight(pNode);
+		writeHead();
+		writeNode(node);
+		writeNode(pNode);
+		return pNode.m_inFileOffset;
+	}
+
+	int UsedFile::rRotata(Node& node)
+	{
+		Node pNode = readNode(node.m_leftChild);
+		node.m_leftChild = pNode.m_rightChild;
+
+		if (pNode.m_rightChild == -1)
+		{
+			Node tmp = readNode(pNode.m_rightChild);
+			tmp.m_parent = node.m_inFileOffset;
+			writeNode(tmp);
+		}
+
+		pNode.m_parent = node.m_parent;
+
+		if (node.m_parent == -1)
+		{
+			m_head.rootNodeOffset = pNode.m_inFileOffset;
+		}
+		else if (node.m_inFileOffset == readNode(node.m_parent).m_rightChild)
+		{
+			Node tmp = readNode(node.m_parent);
+			tmp.m_rightChild = pNode.m_inFileOffset;
+			writeNode(tmp);
+		}
+		else
+		{
+			Node tmp = readNode(node.m_parent);
+			tmp.m_leftChild = pNode.m_inFileOffset;
+			writeNode(tmp);
+		}
+
+		pNode.m_rightChild = node.m_inFileOffset;
+		node.m_parent = pNode.m_inFileOffset;
+		fixHeight(node);
+		fixHeight(pNode);
+		writeHead();
+		writeNode(node);
+		writeNode(pNode);
+		return pNode.m_inFileOffset;
+	}
+
+	int UsedFile::balance(Node& p)
+	{
+		fixHeight(p);
+		//assert(p.m_rightChild != -1 || p.m_leftChild != -1);
+		Node pRight = readNode(p.m_rightChild);
+		Node pLeft = readNode(p.m_leftChild);
+		if (bfactor(p) == 2)
+		{
+			if (bfactor(pRight) < 0)
+				p.m_rightChild = rRotata(pRight);
+			return lRotate(p);
+		}
+		if (bfactor(p) == -2)
+		{
+			if (bfactor(pLeft) > 0)
+				p.m_leftChild = lRotate(pLeft);
+			return rRotata(p);
+		}
+		writeNode(p);
+		writeNode(pLeft);
+		writeNode(pRight);
+		return p.m_parent; // balancing is not required}
+	}
+
+	bool UsedFile::insertNewNode(Node& node)
+	{
+		int ret;
+		if (m_head.firstEmptyNodeOffset == -1)
+		{
+			stream.seekp(0, fstream::end);
+			int offset = stream.tellp();
+			ret = writeNode(offset, node);
+			if (ret == -1)
+				return false;
+			m_head.nodeSize++;
+			node.m_inFileOffset = offset;
+			ret = writeHead();
+		}
+		else
+		{
+			int writeOffset = m_head.firstEmptyNodeOffset;
+			EmptyNode emptyNode;
+			ret = readNode(m_head.firstEmptyNodeOffset, emptyNode);
+			if (ret == -1)
+				return false;
+			int nextEmptyNodeOffset = emptyNode.nextNodeOffset;
+			ret = writeNode(writeOffset, node);
+			node.m_inFileOffset = writeOffset;
+			if (ret == -1)
+				return false;
+			m_head.nodeSize++;
+			m_head.firstEmptyNodeOffset = nextEmptyNodeOffset;
+			ret = writeHead();
+			if (ret == -1)
+				return false;
+		}
+
+		return true;
+	}
+
+	bool UsedFile::writeNode(const size_t offset, const Node& node)
+	{
+		if (offset == -1)
+			return false;
+		return write(offset, &node, Node::size());
+	}
+
+	bool UsedFile::writeNode(const Node& node)
+	{
+		return writeNode(node.m_inFileOffset, node);
+	}
+
+	bool UsedFile::writeNode(const size_t offset, const EmptyNode& node)
+	{
+		return write(offset, &node, Node::size());
+	}
+
+	UsedFile::Node UsedFile::readNode(const size_t offset)
+	{
+		Node node;
+		readNode(offset, node);
+		return node;
+	}
+
+	bool UsedFile::readNode(const size_t offset, Node& node)
+	{
+		if (offset == -1)
+		{
+			node.m_inFileOffset = -1;
+			return false;
+		}
+		int ret = read(offset, &node, Node::size());
+		node.m_inFileOffset = offset;
+		return ret;
+	}
+
+	bool UsedFile::readNode(const size_t offset, EmptyNode& node)
+	{
+		return read(offset, &node, Node::size());
+	}
+
+	bool UsedFile::writeHead()
+	{
+		return write(0, &m_head, sizeof(m_head));
+	}
+
+	bool UsedFile::readHead()
+	{
+		return read(0, &m_head, sizeof(m_head));
+	}
+
+	int UsedFile::writeFirstNode(const size_t offset, const size_t length)
+	{
+		Node node(offset, length);
+		int writeOffset = Node::size();
+		writeNode(writeOffset, node);
+		return writeOffset;
+	}
+
+	int UsedFile::bfactor(const Node& node)
+	{
+		return nodeHeight(node.m_rightChild) - nodeHeight(node.m_leftChild);
+	}
+
+	void UsedFile::fixHeight(Node& node)
+	{
+		const int lHeight = nodeHeight(node.m_leftChild);
+		const int rHeight = nodeHeight(node.m_rightChild);
+		int height = (lHeight > rHeight ? lHeight : rHeight) + 1;
+		if (node.m_height == height)
+			return;
+		node.m_height = height;
+		writeNode(node);
+	}
+
+	int UsedFile::nodeHeight(int m_offset)
+	{
+		int ret;
+		if (m_offset == -1)
+			return 0;
+		return readNode(m_offset).m_height;
 	}
 
 
-
 	UnusedFile::UnusedFile(String fileName, const bool trunc)
-		: FileBase(fileName, trunc), m_head{ 0,-1,-1 }
+		: FileBase(fileName, trunc), m_head{ 0,-1,-1,-1 }
 	{
 		if (trunc)
 			writeHead();
@@ -97,11 +586,11 @@ namespace Sdalin
 		const size_t length = node.m_length;
 		if (length <= 0)
 			throw "invalid length";
-		if(!empty())
+		if (!empty())
 		{
 			tryCombinenNode(node);
 		}
-		
+
 		if (empty())
 		{
 			insertNewNode(node);
@@ -817,7 +1306,7 @@ namespace Sdalin
 			if (ret == -1)
 				return false;
 		}
-		
+
 		return true;
 	}
 

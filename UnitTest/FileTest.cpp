@@ -162,7 +162,92 @@ namespace FileTest
 			Assert::AreEqual(1,file.m_head.nodeSize);
 			Assert::AreEqual(size_t(0), file.readNode(file.m_head.rootNodeOffset_length).m_offset);
 			Assert::AreEqual(size_t(340), file.readNode(file.m_head.rootNodeOffset_length).m_length);
+		}
 
+		TEST_METHOD(UsedFileInsert)
+		{
+			UsedFile file("UsedFileInsert.bin", true);
+			file.insert(55, 55);
+			file.insert(15, 15);
+			file.insert(135, 135);
+			UsedFile::Node node = file.readNode(0x18);
+			Assert::AreEqual(size_t(55), node.m_offset);
+			Assert::AreEqual(size_t(55), node.m_length);
+			Assert::AreEqual(0x30, node.m_leftChild);
+			Assert::AreEqual(0x48, node.m_rightChild);
+			Assert::AreEqual(-1, node.m_parent);
+
+
+			node = file.readNode(0x30);
+			Assert::AreEqual(size_t(15), node.m_offset);
+			Assert::AreEqual(size_t(15), node.m_length);
+			Assert::AreEqual(-1, node.m_leftChild);
+			Assert::AreEqual(-1, node.m_rightChild);
+			Assert::AreEqual(0x18, node.m_parent);
+
+			node = file.readNode(0x48);
+			Assert::AreEqual(size_t(135), node.m_offset);
+			Assert::AreEqual(size_t(135), node.m_length);
+			Assert::AreEqual(-1, node.m_leftChild);
+			Assert::AreEqual(-1, node.m_rightChild);
+			Assert::AreEqual(0x18, node.m_parent);
+		}
+
+		TEST_METHOD(UsedFileInsertBalance)
+		{
+			UsedFile file("UsedFileInsertBalance.bin", true);
+			file.insert(1, 1);
+			file.insert(10, 10);
+			file.insert(30, 30);
+			UsedFile::Node node = file.readNode(0x18);
+			Assert::AreEqual(size_t(1), node.m_offset);
+			Assert::AreEqual(size_t(1), node.m_length);
+			Assert::AreEqual(-1, node.m_leftChild);
+			Assert::AreEqual(-1, node.m_rightChild);
+			Assert::AreEqual(0x30, node.m_parent);
+
+
+			node = file.readNode(0x30);
+			Assert::AreEqual(size_t(10), node.m_offset);
+			Assert::AreEqual(size_t(10), node.m_length);
+			Assert::AreEqual(0x18, node.m_leftChild);
+			Assert::AreEqual(0x48, node.m_rightChild);
+			Assert::AreEqual(-1, node.m_parent);
+
+
+			node = file.readNode(0x48);
+			Assert::AreEqual(size_t(30), node.m_offset);
+			Assert::AreEqual(size_t(30), node.m_length);
+			Assert::AreEqual(-1, node.m_leftChild);
+			Assert::AreEqual(-1, node.m_rightChild);
+			Assert::AreEqual(0x30, node.m_parent);
+		}
+
+		TEST_METHOD(UsedFileEraseBalance)
+		{
+			UsedFile file("UsedFileEraseBalance.bin", true);
+			file.insert(135, 135);
+			file.insert(170, 120);
+			file.insert(120, 170);
+			file.insert(150, 87);
+			file.insert(190, 130);
+			file.insert(87, 150);
+			file.insert(130, 190);
+
+
+			size_t offset, length;
+			file.erase(135);
+			Assert::AreEqual(size_t(190), file.readNode(file.m_head.rootNodeOffset).m_length);
+			Assert::AreEqual(size_t(130), file.readNode(file.m_head.rootNodeOffset).m_offset);
+			file.erase(130);
+			Assert::AreEqual(size_t(170), file.readNode(file.m_head.rootNodeOffset).m_length);
+			Assert::AreEqual(size_t(120), file.readNode(file.m_head.rootNodeOffset).m_offset);
+			file.erase(120);
+			Assert::AreEqual(size_t(120), file.readNode(file.m_head.rootNodeOffset).m_length);
+			Assert::AreEqual(size_t(170), file.readNode(file.m_head.rootNodeOffset).m_offset);
+			file.erase(87);
+			Assert::AreEqual(size_t(120), file.readNode(file.m_head.rootNodeOffset).m_length);
+			Assert::AreEqual(size_t(170), file.readNode(file.m_head.rootNodeOffset).m_offset);
 		}
 	};
 }

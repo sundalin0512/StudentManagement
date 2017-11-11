@@ -1,8 +1,7 @@
 #pragma once
 #include <fstream>
 #include "../MyString/MyString.h"
-#include "../DataStruct/Stack.hpp"
-#include <cassert>
+
 using std::fstream;
 
 namespace FileTest
@@ -14,15 +13,6 @@ namespace Sdalin
 {
 	class FileBase
 	{
-		public:
-		friend class FileTest::FileTest;
-		private:
-		struct Node
-		{
-			size_t m_offset;
-			size_t m_length;
-			int childNum;
-		};
 		public:
 		FileBase();
 
@@ -47,9 +37,100 @@ namespace Sdalin
 	class UsedFile : public FileBase
 	{
 		public:
-		UsedFile(String fileName, const bool trunc = false);
+		friend class FileTest::FileTest;
+		private:
+		struct Node
+		{
+			size_t m_offset;
+			size_t m_length;
+			int m_leftChild;
+			int m_rightChild;
+			int m_parent;
+			int m_height;
+
+			int m_inFileOffset;
+			Node();
+
+			Node(const size_t offset, const size_t length);
+
+			static size_t size();
+		};
+		struct FileHead
+		{
+			int nodeSize;
+			int firstEmptyNodeOffset;
+			int rootNodeOffset;
+			int reserve[sizeof(Node) / sizeof(int) - 1 - 3];
+		};
+		struct EmptyNode
+		{
+			int nextNodeOffset;
+			int reserve[sizeof(Node) / sizeof(int) - 1 - 1];
+		};
+		public:
+		UsedFile(String fileName, const bool trunc);
 
 		UsedFile(const UsedFile&) = delete;
+
+		bool empty() const;
+
+		//返回插入到文件中的起始位置
+		int insert(const size_t offset, const size_t length);
+
+
+		int erase(const size_t offset);
+
+
+		private:
+
+		int insert(Node& node);
+
+		int query(const int length);
+
+
+		//只删除，不平衡
+		void erase(Node node, int& offset);
+
+		int lRotate(Node& node);
+
+		int rRotata(Node& node);
+
+		int balance(Node& p);
+
+		bool insertNewNode(Node& node);
+
+		bool writeNode(const size_t offset, const Node& node);
+
+		bool writeNode(const Node& node);
+
+		bool writeNode(const size_t offset, const EmptyNode& node);
+
+		Node readNode(const size_t offset);
+
+		bool readNode(const size_t offset, Node& node);
+
+		bool readNode(const size_t offset, EmptyNode& node);
+
+		bool writeHead();
+
+		bool readHead();
+
+		/// <summary>
+		/// 写入第一个节点
+		/// </summary>
+		/// <param name="offset">在File中的偏移</param>
+		/// <param name="length">在File中的长度</param>
+		/// <returns>写入的文件偏移,<c>-1</c>失败</returns>
+		int writeFirstNode(const size_t offset, const size_t length);
+
+		int bfactor(const Node& node);
+
+		void fixHeight(Node& node);
+
+		int nodeHeight(int m_offset);
+
+		private:
+		FileHead m_head;
 	};
 
 
