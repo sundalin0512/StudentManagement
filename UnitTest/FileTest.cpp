@@ -54,12 +54,12 @@ namespace FileTest
 		TEST_METHOD(UnusedFileInsert)
 		{
 			UnusedFile file("UnusedFileInsert.bin", true);
-			file.insert(25, 25);
+			file.insert(55, 55);
 			file.insert(15, 15);
-			file.insert(35, 35);
+			file.insert(135, 135);
 			UnusedFile::Node node = file.readNode(0x28);
-			Assert::AreEqual(size_t(25), node.m_offset);
-			Assert::AreEqual(size_t(25), node.m_length);
+			Assert::AreEqual(size_t(55), node.m_offset);
+			Assert::AreEqual(size_t(55), node.m_length);
 			Assert::AreEqual(0x50, node.m_leftChild_length);
 			Assert::AreEqual(0x78, node.m_rightChild_length);
 			Assert::AreEqual(-1, node.m_parent_length);
@@ -78,8 +78,8 @@ namespace FileTest
 			Assert::AreEqual(0x28, node.m_parent_offset);
 
 			node = file.readNode(0x78);
-			Assert::AreEqual(size_t(35), node.m_offset);
-			Assert::AreEqual(size_t(35), node.m_length);
+			Assert::AreEqual(size_t(135), node.m_offset);
+			Assert::AreEqual(size_t(135), node.m_length);
 			Assert::AreEqual(-1, node.m_leftChild_length);
 			Assert::AreEqual(-1, node.m_rightChild_length);
 			Assert::AreEqual(0x28, node.m_parent_length);
@@ -148,6 +148,21 @@ namespace FileTest
 			file.getEnoughPlace(87, offset, length);
 			Assert::AreEqual(size_t(120), offset);
 			Assert::AreEqual(size_t(170), length);
+		}
+
+		TEST_METHOD(UnusedFileCombine)
+		{
+			UnusedFile file("UnusedFileCombine.bin", true);
+			file.insert(10, 120);
+			file.insert(130, 50);
+			file.insert(0, 10);
+			file.insert(180, 20);
+			file.insert(200, 90);
+			file.insert(290, 50);
+			Assert::AreEqual(1,file.m_head.nodeSize);
+			Assert::AreEqual(size_t(0), file.readNode(file.m_head.rootNodeOffset_length).m_offset);
+			Assert::AreEqual(size_t(340), file.readNode(file.m_head.rootNodeOffset_length).m_length);
+
 		}
 	};
 }

@@ -97,7 +97,11 @@ namespace Sdalin
 		const size_t length = node.m_length;
 		if (length <= 0)
 			throw "invalid length";
-		int ret = 0;
+		if(!empty())
+		{
+			tryCombinenNode(node);
+		}
+		
 		if (empty())
 		{
 			insertNewNode(node);
@@ -211,6 +215,365 @@ namespace Sdalin
 		}
 	}
 
+	void UnusedFile::tryCombinenNode(Node& node)
+	{
+		int pre = 0;
+		int next = 0;
+		query_offset(node, pre, next);
+		if (pre != -1)
+		{
+			Node preNode = readNode(pre);
+			node.m_offset = preNode.m_offset;
+			node.m_length += preNode.m_length;
+			int tmp1, tmp2;
+			erase(preNode, tmp1, tmp2);
+		}
+		if (next != -1)
+		{
+			Node nextNode = readNode(next);
+			node.m_length += nextNode.m_length;
+			int tmp1, tmp2;
+			erase(nextNode, tmp1, tmp2);
+		}
+	}
+
+	int UnusedFile::getEnoughPlace(const size_t length, size_t& rOffset, size_t& rLength)
+	{
+		int offset = query_length(length);
+		if (offset == -1)
+			return -1;
+		Node node = readNode(offset);
+		rOffset = node.m_offset;
+		rLength = node.m_length;
+		int enbalanceNodeOffset_length = 0;
+		int enbalanceNodeOffset_offset = 0;
+		erase(node, enbalanceNodeOffset_length, enbalanceNodeOffset_offset);
+		Node enbalanceNode_length = readNode(enbalanceNodeOffset_length);
+		while (enbalanceNode_length.m_inFileOffset != -1)
+		{
+			enbalanceNodeOffset_length = balance_length(enbalanceNode_length);
+			enbalanceNode_length = readNode(enbalanceNodeOffset_length);
+		}
+		Node enbalanceNode_offset = readNode(enbalanceNodeOffset_offset);
+		while (enbalanceNode_offset.m_inFileOffset != -1)
+		{
+			enbalanceNodeOffset_offset = balance_offset(enbalanceNode_offset);
+			enbalanceNode_offset = readNode(enbalanceNodeOffset_offset);
+		}
+		return 0;
+	}
+
+	int UnusedFile::query_length(const int length)
+	{
+		Node parent = readNode(m_head.rootNodeOffset_length);
+		if (parent.m_inFileOffset == -1)
+			return -1;
+		Node nextNode = parent;
+		while (nextNode.m_inFileOffset != -1)
+		{
+			parent = nextNode;
+			if (parent.m_length >= length)
+			{
+				return parent.m_inFileOffset;
+			}
+			else if (parent.m_length < length)
+			{
+				nextNode = readNode(parent.m_rightChild_length);
+			}
+		}
+		return -1;
+	}
+
+	void UnusedFile::query_offset(const Node& node, int& preOffset, int& nextOffset)
+	{
+		preOffset = -1;
+		nextOffset = -1;
+		Node parent = readNode(m_head.rootNodeOffset_offset);
+		if (parent.m_inFileOffset == -1)
+			return;
+		Node nextNode = parent;
+		while (nextNode.m_inFileOffset != -1)
+		{
+			parent = nextNode;
+			if (parent.m_offset + parent.m_length == node.m_offset)
+			{
+				preOffset = parent.m_inFileOffset;
+				break;
+			}
+			else if (parent.m_offset + parent.m_length > node.m_offset)
+			{
+				nextNode = readNode(parent.m_leftChild_offset);
+			}
+			else if (parent.m_offset + parent.m_length < node.m_offset)
+			{
+				nextNode = readNode(parent.m_rightChild_offset);
+			}
+		}
+
+		parent = readNode(m_head.rootNodeOffset_offset);
+		nextNode = parent;
+		while (nextNode.m_inFileOffset != -1)
+		{
+			parent = nextNode;
+			if (parent.m_offset == node.m_offset + node.m_length)
+			{
+				nextOffset = parent.m_inFileOffset;
+				break;
+			}
+			else if (parent.m_offset > node.m_offset + node.m_length)
+			{
+				nextNode = readNode(parent.m_leftChild_offset);
+			}
+			else if (parent.m_offset < node.m_offset + node.m_length)
+			{
+				nextNode = readNode(parent.m_rightChild_offset);
+			}
+		}
+	}
+
+	void UnusedFile::erase(Node node, int& offset_length, int& offset_offset)
+	{
+		Node maxLeftNode_length = readNode(node.m_leftChild_length);
+		if (maxLeftNode_length.m_inFileOffset == -1)
+		{
+			if (node.m_rightChild_length != -1)
+			{
+				// node only has right child
+				Node right = readNode(node.m_rightChild_length);
+
+				if (node.m_inFileOffset == m_head.rootNodeOffset_length)
+				{
+					right.m_parent_length = -1;
+					m_head.rootNodeOffset_length = right.m_inFileOffset;
+				}
+				else
+				{
+					right.m_parent_length = node.m_parent_length;
+					Node parent = readNode(node.m_parent_length);
+					if (parent.m_leftChild_length == node.m_inFileOffset)
+						parent.m_leftChild_length = right.m_inFileOffset;
+					else
+						parent.m_rightChild_length = right.m_inFileOffset;
+					writeNode(parent);
+				}
+				writeNode(right);
+				offset_length = right.m_inFileOffset;
+				goto OffsetBegin;
+			}
+			else
+			{
+				// node is leaf node
+				Node parent = readNode(node.m_parent_length);
+				if (node.m_inFileOffset == parent.m_leftChild_length)
+					parent.m_leftChild_length = -1;
+				else
+					parent.m_rightChild_length = -1;
+
+				writeNode(parent);
+				offset_length = parent.m_inFileOffset;
+				goto OffsetBegin;
+			}
+		}
+		while (maxLeftNode_length.m_rightChild_length != -1)
+		{
+			// search max left child
+			maxLeftNode_length = readNode(maxLeftNode_length.m_rightChild_length);
+		}
+		if (maxLeftNode_length.m_parent_length == node.m_inFileOffset)
+		{
+			// max_left_child's parent is node
+			Node parent = readNode(node.m_parent_length);
+			maxLeftNode_length.m_parent_length = parent.m_inFileOffset;
+			if (node.m_inFileOffset == parent.m_leftChild_length)
+				parent.m_leftChild_length = maxLeftNode_length.m_inFileOffset;
+			else
+				parent.m_rightChild_length = maxLeftNode_length.m_inFileOffset;
+			maxLeftNode_length.m_rightChild_length = node.m_rightChild_length;
+			if (maxLeftNode_length.m_rightChild_length != -1)
+			{
+				Node right = readNode(maxLeftNode_length.m_rightChild_length);
+				right.m_parent_length = maxLeftNode_length.m_inFileOffset;
+				writeNode(right);
+			}
+			writeNode(maxLeftNode_length);
+			if (parent.m_inFileOffset != -1)
+			{
+				writeNode(parent);
+				offset_length = parent.m_inFileOffset;
+			}
+			else
+			{
+				m_head.rootNodeOffset_length = maxLeftNode_length.m_inFileOffset;
+				offset_length = m_head.rootNodeOffset_length;
+			}
+		}
+		else
+		{
+			// max_left_child's parent is not node
+			Node parent = readNode(maxLeftNode_length.m_parent_length);
+			Node left = readNode(maxLeftNode_length.m_leftChild_length);
+			left.m_parent_length = maxLeftNode_length.m_parent_length;
+			parent.m_rightChild_length = left.m_inFileOffset;
+
+			maxLeftNode_length.m_leftChild_length = node.m_leftChild_length;
+			maxLeftNode_length.m_rightChild_length = node.m_rightChild_length;
+			Node nodeLeft = readNode(node.m_leftChild_length);
+			Node nodeRight = readNode(node.m_rightChild_length);
+			if (nodeLeft.m_inFileOffset == parent.m_inFileOffset)
+				nodeLeft = parent;
+			nodeLeft.m_parent_length = maxLeftNode_length.m_inFileOffset;
+			nodeRight.m_parent_length = maxLeftNode_length.m_inFileOffset;
+
+			Node nodeParent = readNode(node.m_parent_length);
+			maxLeftNode_length.m_parent_length = nodeParent.m_inFileOffset;
+			if (node.m_inFileOffset == nodeParent.m_leftChild_length)
+				nodeParent.m_leftChild_length = maxLeftNode_length.m_inFileOffset;
+			else
+				nodeParent.m_rightChild_length = maxLeftNode_length.m_inFileOffset;
+
+			writeNode(maxLeftNode_length);
+			writeNode(parent);
+			if (left.m_inFileOffset != -1)
+				writeNode(left);
+			writeNode(nodeLeft);
+			if (nodeRight.m_inFileOffset != -1)
+				writeNode(nodeRight);
+			if (nodeParent.m_inFileOffset != -1)
+			{
+				writeNode(nodeParent);
+			}
+			else
+			{
+				m_head.rootNodeOffset_length = maxLeftNode_length.m_inFileOffset;
+			}
+			offset_length = parent.m_inFileOffset;
+		}
+	OffsetBegin:
+		Node maxLeftNode_offset = readNode(node.m_leftChild_offset);
+		if (maxLeftNode_offset.m_inFileOffset == -1)
+		{
+			if (node.m_rightChild_offset != -1)
+			{
+				// node only has right child
+				Node right = readNode(node.m_rightChild_offset);
+
+				if (node.m_inFileOffset == m_head.rootNodeOffset_offset)
+				{
+					right.m_parent_offset = -1;
+					m_head.rootNodeOffset_offset = right.m_inFileOffset;
+				}
+				else
+				{
+					right.m_parent_offset = node.m_parent_offset;
+					Node parent = readNode(node.m_parent_offset);
+					if (parent.m_leftChild_offset == node.m_inFileOffset)
+						parent.m_leftChild_offset = right.m_inFileOffset;
+					else
+						parent.m_rightChild_offset = right.m_inFileOffset;
+					writeNode(parent);
+				}
+				writeNode(right);
+				offset_offset = right.m_inFileOffset;
+				goto End;
+			}
+			else
+			{
+				// node is leaf node
+				Node parent = readNode(node.m_parent_offset);
+				if (node.m_inFileOffset == parent.m_leftChild_offset)
+					parent.m_leftChild_offset = -1;
+				else
+					parent.m_rightChild_offset = -1;
+				writeNode(parent);
+				offset_offset = parent.m_inFileOffset;
+				goto End;
+			}
+		}
+		while (maxLeftNode_offset.m_rightChild_offset != -1)
+		{
+			// search max left child
+			maxLeftNode_offset = readNode(maxLeftNode_offset.m_rightChild_offset);
+		}
+		if (maxLeftNode_offset.m_parent_offset == node.m_inFileOffset)
+		{
+			// max_left_child's parent is node
+			Node parent = readNode(node.m_parent_offset);
+			maxLeftNode_offset.m_parent_offset = parent.m_inFileOffset;
+			if (node.m_inFileOffset == parent.m_leftChild_offset)
+				parent.m_leftChild_offset = maxLeftNode_offset.m_inFileOffset;
+			else
+				parent.m_rightChild_offset = maxLeftNode_offset.m_inFileOffset;
+			maxLeftNode_offset.m_rightChild_offset = node.m_rightChild_offset;
+			if (maxLeftNode_offset.m_rightChild_offset != -1)
+			{
+				Node right = readNode(maxLeftNode_offset.m_rightChild_offset);
+				right.m_parent_offset = maxLeftNode_offset.m_inFileOffset;
+				writeNode(right);
+			}
+			writeNode(maxLeftNode_offset);
+			if (parent.m_inFileOffset != -1)
+			{
+				writeNode(parent);
+				offset_offset = parent.m_inFileOffset;
+			}
+			else
+			{
+				m_head.rootNodeOffset_offset = maxLeftNode_offset.m_inFileOffset;
+				offset_offset = m_head.rootNodeOffset_offset;
+			}
+		}
+		else
+		{
+			// max_left_child's parent is not node
+			Node parent = readNode(maxLeftNode_offset.m_parent_offset);
+			Node left = readNode(maxLeftNode_offset.m_leftChild_offset);
+			left.m_parent_offset = maxLeftNode_offset.m_parent_offset;
+			parent.m_rightChild_offset = left.m_inFileOffset;
+
+			maxLeftNode_offset.m_leftChild_offset = node.m_leftChild_offset;
+			maxLeftNode_offset.m_rightChild_offset = node.m_rightChild_offset;
+			Node nodeLeft = readNode(node.m_leftChild_offset);
+			Node nodeRight = readNode(node.m_rightChild_offset);
+			if (nodeLeft.m_inFileOffset == parent.m_inFileOffset)
+				nodeLeft = parent;
+			nodeLeft.m_parent_offset = maxLeftNode_offset.m_inFileOffset;
+			nodeRight.m_parent_offset = maxLeftNode_offset.m_inFileOffset;
+
+			Node nodeParent = readNode(node.m_parent_offset);
+			maxLeftNode_offset.m_parent_offset = nodeParent.m_inFileOffset;
+			if (node.m_inFileOffset == nodeParent.m_leftChild_offset)
+				nodeParent.m_leftChild_offset = maxLeftNode_offset.m_inFileOffset;
+			else
+				nodeParent.m_rightChild_offset = maxLeftNode_offset.m_inFileOffset;
+
+			writeNode(maxLeftNode_offset);
+			writeNode(parent);
+			if (left.m_inFileOffset != -1)
+				writeNode(left);
+			writeNode(nodeLeft);
+			if (nodeRight.m_inFileOffset != -1)
+				writeNode(nodeRight);
+			if (nodeParent.m_inFileOffset != -1)
+			{
+				writeNode(nodeParent);
+			}
+			else
+			{
+				m_head.rootNodeOffset_offset = maxLeftNode_offset.m_inFileOffset;
+			}
+			offset_offset = parent.m_inFileOffset;
+		}
+	End:
+		EmptyNode* emptyNode = (EmptyNode*)&node;
+		memset(emptyNode, 0, Node::size());
+		emptyNode->nextNodeOffset = m_head.firstEmptyNodeOffset;
+		m_head.firstEmptyNodeOffset = node.m_inFileOffset;
+		writeNode(node);
+		m_head.nodeSize--;
+		writeHead();
+		return;
+	}
+
 	int UnusedFile::lRotate_length(Node& node)
 	{
 		Node pNode = readNode(node.m_rightChild_length);
@@ -296,7 +659,6 @@ namespace Sdalin
 	int UnusedFile::balance_length(Node& p)
 	{
 		fixHeight_length(p);
-		//assert(p.m_rightChild_length != -1 || p.m_leftChild_length != -1);
 		Node pRight = readNode(p.m_rightChild_length);
 		Node pLeft = readNode(p.m_leftChild_length);
 		if (bfactor_length(p) == 2)
@@ -335,16 +697,16 @@ namespace Sdalin
 		{
 			m_head.rootNodeOffset_offset = pNode.m_inFileOffset;
 		}
-		else if (node.m_inFileOffset == readNode(pNode.m_parent_offset).m_leftChild_offset)
+		else if (node.m_inFileOffset == readNode(node.m_parent_offset).m_leftChild_offset)
 		{
-			Node tmp = readNode(pNode.m_parent_offset);
-			tmp.m_leftChild_offset = node.m_inFileOffset;
+			Node tmp = readNode(node.m_parent_offset);
+			tmp.m_leftChild_offset = pNode.m_inFileOffset;
 			writeNode(tmp);
 		}
 		else
 		{
-			Node tmp = readNode(pNode.m_parent_offset);
-			tmp.m_rightChild_offset = node.m_inFileOffset;
+			Node tmp = readNode(node.m_parent_offset);
+			tmp.m_rightChild_offset = pNode.m_inFileOffset;
 			writeNode(tmp);
 		}
 
@@ -376,16 +738,16 @@ namespace Sdalin
 		{
 			m_head.rootNodeOffset_offset = pNode.m_inFileOffset;
 		}
-		else if (node.m_inFileOffset == readNode(pNode.m_parent_offset).m_rightChild_offset)
+		else if (node.m_inFileOffset == readNode(node.m_parent_offset).m_rightChild_offset)
 		{
-			Node tmp = readNode(pNode.m_parent_offset);
-			tmp.m_rightChild_offset = node.m_inFileOffset;
+			Node tmp = readNode(node.m_parent_offset);
+			tmp.m_rightChild_offset = pNode.m_inFileOffset;
 			writeNode(tmp);
 		}
 		else
 		{
-			Node tmp = readNode(pNode.m_parent_offset);
-			tmp.m_leftChild_offset = node.m_inFileOffset;
+			Node tmp = readNode(node.m_parent_offset);
+			tmp.m_leftChild_offset = pNode.m_inFileOffset;
 			writeNode(tmp);
 		}
 
