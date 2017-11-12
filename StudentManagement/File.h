@@ -267,6 +267,7 @@ namespace Sdalin
 		private:
 		FileHead m_head;
 		String ErrorCode;
+		
 
 	};
 
@@ -287,8 +288,24 @@ namespace Sdalin
 		//根据偏移找大小
 		bool query(size_t offset, size_t& size);
 
+		/// <summary>
+		/// 从文件中读取数据
+		/// </summary>
+		/// <param name="data">缓冲区</param>
+		/// <param name="offset">在文件中的偏移</param>
+		/// <param name="length">缓冲区长度</param>
+		/// <param name="readSize">从文件中读取的长度</param>
+		/// <returns><c>true</c>成功，<c>false</c>失败</returns>
 		bool read(void* data, const size_t offset, const size_t length, size_t& readSize);
 
+		/// <summary>
+		/// 向文件中已有数据区写入数据
+		/// </summary>
+		/// <remarks>写入的字节数不超过原字节数，否则失败</remarks>
+		/// <param name="data">要写入的数据</param>
+		/// <param name="offset">在文件中的偏移</param>
+		/// <param name="size">要写入的字节数</param>
+		/// <returns><c>true</c>成功，<c>false</c>失败</returns>
 		bool write(void* data, const size_t offset, const size_t size);
 
 		private:

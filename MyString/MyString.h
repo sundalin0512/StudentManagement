@@ -26,6 +26,7 @@ namespace Sdalin
 
 		void SetLength(size_t length);
 
+		//≤ª∞¸¿®÷’÷πNULL
 		size_t GetLength() const;
 
 		const char* c_str() const;

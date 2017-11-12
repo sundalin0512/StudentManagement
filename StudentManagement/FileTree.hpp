@@ -1,45 +1,73 @@
 #pragma once
-
-#include "Queue.hpp"
-#include "Stack.hpp"
-#include "../MyString/MyString.h"
-#include "../StudentManagement/types.h"
-
+#include "../DataStruct/Queue.hpp"
+#include "../DataStruct/Stack.hpp"
+#include "types.h"
 
 namespace Sdalin {
-	//template<class _Ty = void>
-	//struct less
-	//{	// functor for operator<
+	template<class _Ty = void>
+	struct lessTag
+	{	// functor for operator<
 
-	//	constexpr bool operator()(const _Ty& _Left, const _Ty& _Right) const
-	//	{	// apply operator< to operands
-	//		return (_Left < _Right);
-	//	}
-	//};
+		constexpr bool operator()(const _Ty& _Left, const _Ty& _Right) const
+		{	// apply operator< to operands
+			return (_Left < _Right);
+		}
+	};
 
-	template <class Key, class Value>
+	template<class _Ty = void>
+	struct equalTag
+	{
+		constexpr bool operator()(const _Ty& _Left, const _Ty& _Right) const
+		{	// apply operator< to operands
+			return (_Left == _Right);
+		}
+	};
+
+	template<class _Ty = void>
+	struct HashTag
+	{
+		int operator()(const _Ty& t) const
+		{
+			return (t.Hash());
+		}
+	};
+
+	int HashTag<int> ::operator()(const int& t)const
+	{
+		return t;
+	}
+
+
+
+	template <class Value, class Hash = HashTag<Value>, class less = lessTag<Value>, class equal = equalTag<Value>>
 	class Pair
 	{
 		public:
-		Key key;
+		int key;
 		Value value;
 		Pair() {}
-		Pair(Value value)
+		Pair(Value& value)
 		{
 			this->value = value;
 			key = Hash(value);
 		}
+		Pair& operator = (const Pair& other)
+		{
+			this->key = other.key;
+			this->value = other.value;
+			return *this;
+		}
 		bool operator ==(const Pair& other) const
 		{
-			return key == other.key && value == other.value;
+			return key == other.key && equal(value , other.value);
 		}
 		bool operator >(const Pair& other) const
 		{
-			return key > other.key && value > other.value;
+			return key > other.key && !equal(value, other.value)&& !less(value, other.value);
 		}
 		bool operator <(const Pair& other) const
 		{
-			return key < other.key && value < other.value;
+			return key < other.key && less(value , other.value);
 		}
 		operator Value()
 		{
@@ -50,38 +78,45 @@ namespace Sdalin {
 			return value;
 		}
 
-		private:
-		int Hash()
+	};
+
+
+	template <class T>
+	struct TreeHash
+	{
+		T& t;
+		TreeHash(T& t) : t(t) {}
+		operator int()
 		{
-			return value.Hash();
+			return t.root()->m_data.key;
 		}
 	};
 
-	int Pair<int, int>::Hash()
-	{
-		return value;
-	}
-
-
-
-	template <class Key, class Value = Key, class T = Pair<Key, Value>>
-	class avlTree
+	template <class Value = int, class Hash = HashTag<Value>, class less = lessTag<Value>, class equal = equalTag<Value>, class T = Pair<Value, Hash, less,equal>>
+	class FileTree
 	{
 		//using T = int;
 		public:
+		friend struct TreeHash<FileTree<StudentCourse, HashCourseID<StudentCourse>, lessStudentID<StudentCourse>, equalStudentID<StudentCourse>>>;
+		friend struct TreeHash<FileTree<StudentCourse, HashStudentID<StudentCourse>, lessStudentID<StudentCourse>, equalStudentID<StudentCourse>>>;
+
 		struct Node
 		{
+			size_t offset;
+			size_t length;
+			size_t dataOffset;
+			size_t dataLength;
 			Node* m_parent;
 			Node* m_left;
 			Node* m_right;
 			int m_height;
 			T m_data;
-			Node()
+			Node() :m_data(T(Value()))
 			{
 				m_parent = nullptr;
 				m_left = nullptr;
 				m_right = nullptr;
-				m_data = T();
+
 				m_height = 0;
 			}
 
@@ -125,12 +160,12 @@ namespace Sdalin {
 		size_t m_size;
 
 		public:
-		avlTree()
+		FileTree()
 			: m_root(new Node), m_size(0)
 		{
 			root() = nullptr;
 		}
-		avlTree(const avlTree& other)
+		FileTree(const FileTree& other)
 		{
 			m_size = 0;
 			Queue<Node*> nodes = other.layer();
@@ -140,7 +175,7 @@ namespace Sdalin {
 				nodes.pop();
 			}
 		}
-		~avlTree()
+		~FileTree()
 		{
 			Queue<Node*> nodes = layer();
 			while (!nodes.empty())
@@ -591,11 +626,11 @@ namespace Sdalin {
 			return p; // balancing is not required
 		}
 		public:
-		//friend int Pair<int, avlTree<int, Student>>::Hash()
+		//friend int Pair<int, FileTree<int, Student>>::Hash()
 		//{
 
 		//}
+
 	};
-	
 
 }
