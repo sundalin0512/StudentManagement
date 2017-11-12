@@ -284,9 +284,12 @@ namespace Sdalin
 
 		bool modify(void* data, const size_t offset, const size_t size, size_t& newOffset);
 
+		//根据偏移找大小
 		bool query(size_t offset, size_t& size);
 
 		bool read(void* data, const size_t offset, const size_t length, size_t& readSize);
+
+		bool write(void* data, const size_t offset, const size_t size);
 
 		private:
 		UsedFile m_used_file;

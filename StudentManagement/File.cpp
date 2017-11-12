@@ -1510,4 +1510,22 @@ namespace Sdalin
 		}
 		return false;
 	}
+
+	bool File::write(void* data, const size_t offset, const size_t size)
+	{
+		size_t length = 0;
+		if (query(offset, length));
+		{
+			if (length < size)
+			{
+				return false;
+			}
+			else
+			{
+				write(data, offset, size);
+				return true;
+			}
+		}
+		return false;
+	}
 }
