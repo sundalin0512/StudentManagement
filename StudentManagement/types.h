@@ -3,11 +3,11 @@
 using Sdalin::String;
 
 template<class T>
-struct HashID 
+struct HashID
 {
-	T& t;
-	HashID(T& t) : t(t){}
-	operator int()
+	const T& t;
+	HashID(const T& t) : t(t) {}
+	operator int()const
 	{
 		return t.hashID();
 	}
@@ -16,9 +16,9 @@ struct HashID
 template<class T>
 struct HashName
 {
-	T& t;
-	HashName(T& t) : t(t) {}
-	operator int()
+	const T& t;
+	HashName(const T& t) : t(t) {}
+	operator int()const
 	{
 		return t.hashName();
 	}
@@ -28,10 +28,10 @@ struct HashName
 template <class T>
 struct lessID
 {
-	T& t1;
-	T& t2;
-	lessID(T& t1, T& t2): t1(t1),t2(t2){}
-	operator bool ()
+	const T& t1;
+	const T& t2;
+	lessID(const T& t1, const T& t2) : t1(t1), t2(t2) {}
+	operator bool()const
 	{
 		return t1.ID < t2.ID;
 	}
@@ -39,10 +39,10 @@ struct lessID
 template <class T>
 struct equalID
 {
-	T& t1;
-	T& t2;
-	equalID(T& t1, T& t2) : t1(t1), t2(t2) {}
-	operator bool()
+	const T& t1;
+	const T& t2;
+	equalID(const T& t1, const T& t2) : t1(t1), t2(t2) {}
+	operator bool()const
 	{
 		return t1.ID == t2.ID;
 	}
@@ -50,10 +50,10 @@ struct equalID
 template <class T>
 struct lessName
 {
-	T& t1;
-	T& t2;
-	lessName(T& t1, T& t2) : t1(t1), t2(t2) {}
-	operator bool()
+	const T& t1;
+	const T& t2;
+	lessName(const T& t1, const T& t2) : t1(t1), t2(t2) {}
+	operator bool()const
 	{
 		return t1.name < t2.name;
 	}
@@ -61,10 +61,10 @@ struct lessName
 template <class T>
 struct equalName
 {
-	T& t1;
-	T& t2;
-	equalName(T& t1, T& t2) : t1(t1), t2(t2) {}
-	operator bool()
+	const T& t1;
+	const T& t2;
+	equalName(const T& t1, const T& t2) : t1(t1), t2(t2) {}
+	operator bool()const
 	{
 		return t1.name == t2.name;
 	}
@@ -73,7 +73,7 @@ struct Student
 {
 	String ID;
 	String name;
-	
+
 	int hashID() const
 	{
 		return ID.Hash();
@@ -105,7 +105,7 @@ struct StudentCourse
 	String studentID;
 	String courseID;
 	int grade;
-	
+
 	int hashStudentID() const
 	{
 		return studentID.Hash();
@@ -118,9 +118,9 @@ struct StudentCourse
 template <class T>
 struct HashStudentID
 {
-	T& t;
-	HashStudentID(T& t) : t(t) {}
-	operator int()
+	const T& t;
+	HashStudentID(const T& t) : t(t) {}
+	operator int()const
 	{
 		return t.hashStudentID();
 	}
@@ -128,9 +128,9 @@ struct HashStudentID
 template <class T>
 struct HashCourseID
 {
-	T& t;
-	HashCourseID(T& t) : t(t) {}
-	operator int()
+	const T& t;
+	HashCourseID(const T& t) : t(t) {}
+	operator int()const
 	{
 		return t.hashCourseID();
 	}
@@ -139,10 +139,10 @@ struct HashCourseID
 template <class T>
 struct lessStudentID
 {
-	T& t1;
-	T& t2;
-	lessStudentID(T& t1, T& t2) : t1(t1), t2(t2) {}
-	operator bool()
+	const T& t1;
+	const T& t2;
+	lessStudentID(const T& t1, const T& t2) : t1(t1), t2(t2) {}
+	operator bool()const
 	{
 		return t1.studentID < t2.studentID;
 	}
@@ -150,10 +150,10 @@ struct lessStudentID
 template <class T>
 struct equalStudentID
 {
-	T& t1;
-	T& t2;
-	equalStudentID(T& t1, T& t2) : t1(t1), t2(t2) {}
-	operator bool()
+	const T& t1;
+	const T& t2;
+	equalStudentID(const T& t1, const T& t2) : t1(t1), t2(t2) {}
+	operator bool()const
 	{
 		return t1.studentID == t2.studentID;
 	}
@@ -161,10 +161,10 @@ struct equalStudentID
 template <class T>
 struct lessCourseID
 {
-	T& t1;
-	T& t2;
-	lessCourseID(T& t1, T& t2) : t1(t1), t2(t2) {}
-	operator bool()
+	const T& t1;
+	const T& t2;
+	lessCourseID(const T& t1, const T& t2) : t1(t1), t2(t2) {}
+	operator bool()const
 	{
 		return t1.courseID < t2.courseID;
 	}
@@ -172,10 +172,10 @@ struct lessCourseID
 template <class T>
 struct equalCourseID
 {
-	T& t1;
-	T& t2;
-	equalCourseID(T& t1, T& t2) : t1(t1), t2(t2) {}
-	operator bool()
+	const T& t1;
+	const T& t2;
+	equalCourseID(const T& t1, const T& t2) : t1(t1), t2(t2) {}
+	operator bool()const
 	{
 		return t1.courseID == t2.courseID;
 	}

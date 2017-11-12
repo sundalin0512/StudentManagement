@@ -51,6 +51,10 @@ namespace Sdalin {
 			this->value = value;
 			key = Hash(value);
 		}
+		~Pair()
+		{
+			
+		}
 		Pair& operator = (const Pair& other)
 		{
 			this->key = other.key;
@@ -67,7 +71,9 @@ namespace Sdalin {
 		}
 		bool operator <(const Pair& other) const
 		{
-			return key < other.key && less(value , other.value);
+			return key < other.key && 
+				less(value , 
+				other.value);
 		}
 		operator Value()
 		{
@@ -88,6 +94,8 @@ namespace Sdalin {
 		TreeHash(T& t) : t(t) {}
 		operator int()
 		{
+			if (t.m_size == 0)
+				return -1;
 			return t.root()->m_data.key;
 		}
 	};
@@ -116,7 +124,10 @@ namespace Sdalin {
 				m_parent = nullptr;
 				m_left = nullptr;
 				m_right = nullptr;
-
+				offset = -1;
+				length = -1;
+				dataOffset = -1;
+				dataLength = -1;
 				m_height = 0;
 			}
 
@@ -149,7 +160,7 @@ namespace Sdalin {
 			{
 				return m_data;
 			}
-			~Node() = default;
+			~Node() {}
 			private:
 			static int nodeHeight(Node* p)
 			{
@@ -165,7 +176,7 @@ namespace Sdalin {
 		{
 			root() = nullptr;
 		}
-		FileTree(const FileTree& other)
+		FileTree(const FileTree& other):FileTree()
 		{
 			m_size = 0;
 			Queue<Node*> nodes = other.layer();
@@ -184,6 +195,22 @@ namespace Sdalin {
 				nodes.pop();
 			}
 			delete m_root;
+		}
+		FileTree& operator=(const FileTree& other)
+		{
+			Queue<Node*> nodes = layer();
+			while (!nodes.empty())
+			{
+				delete nodes.front();
+				nodes.pop();
+			}
+			nodes = other.layer();
+			while (!nodes.empty())
+			{
+				insert(*(nodes.front()));
+				nodes.pop();
+			}
+			return *this;
 		}
 		bool isEmpty() const
 		{
@@ -292,7 +319,7 @@ namespace Sdalin {
 		{
 			Queue<Node*> myQueue;
 			Queue<Node*> retQueue;
-			if (root() == nullptr)
+			if (root() == nullptr || m_size == 0)
 			{
 				return myQueue;
 			}

@@ -119,7 +119,7 @@ namespace Sdalin
 
 	int UsedFile::insert(Node& node)
 	{
-		const int length = node.m_offset;
+		const int length = node.m_length;
 		if (length <= 0)
 			throw "invalid length";
 
