@@ -5,15 +5,15 @@
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace Sdalin;
 namespace FileTest
-{		
+{
 	TEST_CLASS(FileTest)
 	{
-	public:
-		
+		public:
+
 		TEST_METHOD(WriteRead)
 		{
 			//文件成功生成
-			FileBase file("test1.bin",true);
+			FileBase file("test1.bin", true);
 			file._write(0, "123", 4);
 			char c[4];
 			file._read(0, c, 4);
@@ -25,7 +25,7 @@ namespace FileTest
 		{
 			//文件重新打开时没有被覆盖
 			{
-				File file("test2.bin",true);
+				File file("test2.bin", true);
 				file._write(0, "123", 4);
 				char c[4];
 				file._read(0, c, 4);
@@ -46,7 +46,7 @@ namespace FileTest
 			}
 			UnusedFile file("unusedUnusedFileInit.bin");
 			int c[4];
-			file._read(0, c, 4*sizeof(int));
+			file._read(0, c, 4 * sizeof(int));
 			Assert::AreEqual(0, c[0]);
 			Assert::AreEqual(-1, c[1]);
 			Assert::AreEqual(-1, c[2]);
@@ -131,12 +131,12 @@ namespace FileTest
 			file.insert(120, 170);
 			file.insert(150, 87);
 			file.insert(190, 130);
-			file.insert(87,150);
-			file.insert(130,190);
-			
-			
+			file.insert(87, 150);
+			file.insert(130, 190);
+
+
 			size_t offset, length;
-			file.getEnoughPlace(120,offset,length);
+			file.getEnoughPlace(120, offset, length);
 			Assert::AreEqual(size_t(135), offset);
 			Assert::AreEqual(size_t(135), length);
 			file.getEnoughPlace(120, offset, length);
@@ -159,7 +159,7 @@ namespace FileTest
 			file.insert(180, 20);
 			file.insert(200, 90);
 			file.insert(290, 50);
-			Assert::AreEqual(1,file.m_head.nodeSize);
+			Assert::AreEqual(1, file.m_head.nodeSize);
 			Assert::AreEqual(size_t(0), file.readNode(file.m_head.rootNodeOffset_length).m_offset);
 			Assert::AreEqual(size_t(340), file.readNode(file.m_head.rootNodeOffset_length).m_length);
 		}
@@ -247,5 +247,6 @@ namespace FileTest
 			Assert::AreEqual(size_t(120), file.readNode(file.m_head.rootNodeOffset).m_length);
 			Assert::AreEqual(size_t(170), file.readNode(file.m_head.rootNodeOffset).m_offset);
 		}
+
 	};
 }

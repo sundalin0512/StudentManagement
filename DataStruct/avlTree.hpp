@@ -391,29 +391,43 @@ namespace Sdalin {
 				if (node->m_right != nullptr)
 				{
 					// node only has right child
-					node->m_data = node->m_right->m_data;
-					node->m_right = node->m_right->m_right;
-					node->m_left = node->m_right->m_left;
-					if (node->m_right->m_right != nullptr)
-						node->m_right->m_right->m_parent = node;
-					if (node->m_right->m_left != nullptr)
-						node->m_right->m_left->m_parent = node;
-					delete node->m_right;
-					node->m_right = nullptr;
-					m_size--;
-					return node;
+					Node* right = node->m_right;
+					if (node == root())
+					{
+						right->m_parent = m_root;
+						root() = right;
+					}
+					else
+					{
+						right->m_parent = node->m_parent;
+						Node* parent = node->m_parent;
+						if (parent->m_left == node)
+						{
+							parent->m_left = right;
+						}
+						else
+						{
+							parent->m_right = right;
+						}
+					}
+					retNode = right;
+					goto End;
 				}
 				else
 				{
 					// node is leaf node
-					if (node == node->m_parent->m_left)
-						node->m_parent->m_left = nullptr;
+					Node* parent = node->m_parent;
+					if (node == parent->m_left)
+					{
+						parent->m_left = nullptr;
+					}
 					else
-						node->m_parent->m_right = nullptr;
-					retNode = node->m_parent;
-					delete node;
-					m_size--;
-					return retNode;
+					{
+						parent->m_right = nullptr;
+					}
+
+					retNode = parent;
+					goto End;
 				}
 			}
 			while (maxLeftNode->m_right != nullptr)
@@ -424,24 +438,71 @@ namespace Sdalin {
 			if (maxLeftNode->m_parent == node)
 			{
 				// max_left_child's parent is node
-				node->m_data = maxLeftNode->m_data;
-				node->m_left = maxLeftNode->m_left;
-				if (maxLeftNode->m_left != nullptr)
-					maxLeftNode->m_left->m_parent = node;
-				retNode = maxLeftNode->m_parent;
-				delete maxLeftNode;
+				Node* parent = node->m_parent;
+				maxLeftNode->m_parent = parent;
+				if (node == parent->m_left)
+				{
+					parent->m_left = maxLeftNode;
+				}
+				else
+				{
+					parent->m_right = maxLeftNode;
+				}
+				maxLeftNode->m_right = node->m_right;
+				if (maxLeftNode->m_right != nullptr)
+				{
+					Node* right = maxLeftNode->m_right;
+					right->m_parent = maxLeftNode;
+				}
+				if (node != root())
+				{
+					retNode = parent;
+				}
+				else
+				{
+					root() = maxLeftNode;
+					maxLeftNode->m_parent = m_root;
+					retNode = root();
+				}
+
 			}
 			else
 			{
 				// max_left_child's parent is not node
-				node->m_data = maxLeftNode->m_data;
-				maxLeftNode->m_parent->m_right = maxLeftNode->m_left;
-				if (maxLeftNode->m_left != nullptr)
-					maxLeftNode->m_left->m_parent = maxLeftNode->m_parent;
-				retNode = maxLeftNode->m_parent;
-				delete maxLeftNode;
+				Node* parent = maxLeftNode->m_parent;
+				Node* left = maxLeftNode->m_left;
+				if (left != nullptr)
+					left->m_parent = maxLeftNode->m_parent;
+				parent->m_right = left;
+
+				maxLeftNode->m_left = node->m_left;
+				maxLeftNode->m_right = node->m_right;
+				Node* nodeLeft = node->m_left;
+				Node* nodeRight = node->m_right;
+
+				nodeLeft->m_parent = maxLeftNode;
+				if (nodeRight != nullptr)
+					nodeRight->m_parent = maxLeftNode;
+
+				Node* nodeParent = node->m_parent;
+				if (node != root())
+				{
+					maxLeftNode->m_parent = nodeParent;
+					if (node == nodeParent->m_left)
+					{
+						nodeParent->m_left = maxLeftNode;
+					}
+					else
+					{
+						nodeParent->m_right = maxLeftNode;
+					}
+				}
+				retNode = parent;
+
 			}
+		End:
 			m_size--;
+			delete node;
 			return retNode;
 		}
 
