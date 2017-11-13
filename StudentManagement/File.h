@@ -94,7 +94,7 @@ namespace Sdalin
 
 		int lRotate(Node& node);
 
-		int rRotata(Node& node);
+		int rRotate(Node& node);
 
 		int balance(Node& p);
 

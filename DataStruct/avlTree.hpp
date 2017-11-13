@@ -417,18 +417,31 @@ namespace Sdalin {
 				}
 				else
 				{
-					// node is leaf node
-					Node* parent = node->m_parent;
-					if (node == parent->m_left)
+					Node* left = node->m_left;
+					if (node == root())
 					{
-						parent->m_left = nullptr;
+						if (left != nullptr)
+						{
+							left->m_parent = m_root;
+						}
+						root() = left;
+						retNode = m_root;
 					}
 					else
+					// node is leaf node
 					{
-						parent->m_right = nullptr;
-					}
+						Node* parent = node->m_parent;
+						if (node == parent->m_left)
+						{
+							parent->m_left = nullptr;
+						}
+						else
+						{
+							parent->m_right = nullptr;
+						}
 
-					retNode = parent;
+						retNode = parent;
+					}
 					goto End;
 				}
 			}
@@ -545,7 +558,7 @@ namespace Sdalin {
 			return pnode;
 		}
 
-		Node* rRotata(Node* node) const
+		Node* rRotate(Node* node) const
 		{
 			Node* pnode = node->m_left;
 			node->m_left = pnode->m_right;
@@ -579,14 +592,14 @@ namespace Sdalin {
 			if (p->bfactor() == 2)
 			{
 				if (p->m_right->bfactor() < 0)
-					p->m_right = rRotata(p->m_right);
+					p->m_right = rRotate(p->m_right);
 				return lRotate(p);
 			}
 			if (p->bfactor() == -2)
 			{
 				if (p->m_left->bfactor() > 0)
 					p->m_left = lRotate(p->m_left);
-				return rRotata(p);
+				return rRotate(p);
 			}
 			return p; // balancing is not required
 		}

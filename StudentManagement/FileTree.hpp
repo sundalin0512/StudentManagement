@@ -7,22 +7,30 @@
 namespace Sdalin {
 	extern class Manage;
 	extern class Manage manage;
+
+
+
 	template<class _Ty = void>
 	struct lessTag
 	{	// functor for operator<
-
-		constexpr bool operator()(const _Ty& _Left, const _Ty& _Right) const
-		{	// apply operator< to operands
-			return (_Left < _Right);
+		const _Ty& t1;
+		const _Ty& t2;
+		lessTag(const _Ty& t1, const _Ty& t2) : t1(t1), t2(t2) {}
+		operator bool()const
+		{
+			return t1.ID < t2.ID;
 		}
 	};
 
 	template<class _Ty = void>
 	struct equalTag
 	{
-		constexpr bool operator()(const _Ty& _Left, const _Ty& _Right) const
-		{	// apply operator< to operands
-			return (_Left == _Right);
+		const _Ty& t1;
+		const _Ty& t2;
+		equalTag(const _Ty& t1, const _Ty& t2) : t1(t1), t2(t2) {}
+		operator bool()const
+		{
+			return t1.ID < t2.ID;
 		}
 	};
 
@@ -70,7 +78,7 @@ namespace Sdalin {
 		}
 		bool operator >(const Pair& other) const
 		{
-			return key > other.key || (key == other.key)&&(!equal(value, other.value) && !less(value, other.value));
+			return key > other.key || (key == other.key) && (!equal(value, other.value) && !less(value, other.value));
 		}
 		bool operator <(const Pair& other) const
 		{
@@ -103,13 +111,24 @@ namespace Sdalin {
 		}
 	};
 
+
+	template <class Value = int, class Hash = HashTag<Value>, class less = lessTag<Value>, class equal = equalTag<Value>, class T = Pair<Value, Hash, less, equal>>
+	class FileTree;
+
+	typedef FileTree<Student, HashID<Student>, lessID<Student>, equalID<Student>> studentNameInternalTree;
+	typedef FileTree<StudentCourse, HashCourseID<StudentCourse>, lessStudentID<StudentCourse>, equalStudentID<StudentCourse>> studentCourseInternalTree;
+	typedef FileTree<StudentCourse, HashStudentID<StudentCourse>, lessCourseID<StudentCourse>, equalCourseID<StudentCourse>> courseStudentInternalTree;
+
+
+
 	template <class Value = int, class Hash = HashTag<Value>, class less = lessTag<Value>, class equal = equalTag<Value>, class T = Pair<Value, Hash, less, equal>>
 	class FileTree
 	{
 		//using T = int;
 		public:
-		friend struct TreeHash<FileTree<StudentCourse, HashCourseID<StudentCourse>, lessStudentID<StudentCourse>, equalStudentID<StudentCourse>>>;
-		friend struct TreeHash<FileTree<StudentCourse, HashStudentID<StudentCourse>, lessCourseID<StudentCourse>, equalCourseID<StudentCourse>>>;
+		friend struct TreeHash<studentNameInternalTree>;
+		friend struct TreeHash<studentCourseInternalTree>;
+		friend struct TreeHash<courseStudentInternalTree>;
 		friend class Manage;
 		struct Node
 		{
@@ -172,12 +191,26 @@ namespace Sdalin {
 				return p != nullptr ? p->m_height : 0;
 			}
 		};
-		private:
 		Node* m_root;
 		size_t m_size;
+		private:
+		
+		
 		File& file;
 
 		public:
+		operator Value()
+		{
+			if (root() == nullptr)
+				return Value();
+			return root()->m_data.value;
+		}
+		operator Value() const
+		{
+			if (root() == nullptr)
+				return Value();
+			return root()->m_data.value;
+		}
 		FileTree()
 			: m_root(new Node), m_size(0), file(manage.file)
 		{
@@ -219,6 +252,10 @@ namespace Sdalin {
 			}
 			return *this;
 		}
+		//bool operator < (const FileTree& other)
+		//{
+		//	return this->m_root->m_data
+		//}
 
 		static size_t nodeSize()
 		{
@@ -258,7 +295,7 @@ namespace Sdalin {
 			size_t length = nodeSize();
 			Node* pnode = (Node*)malloc(sizeof(Node));
 			memcpy(pnode, node, sizeof(Node));
-			if(pnode->m_parent != nullptr)
+			if (pnode->m_parent != nullptr)
 				pnode->m_parent = (Node*)node->m_parent->offset;
 			if (pnode->m_left != nullptr)
 				pnode->m_left = (Node*)node->m_left->offset;
@@ -286,26 +323,43 @@ namespace Sdalin {
 		{
 			size_t offset = 0;
 			size_t length = nodeSize();
-			char* buffer = getPairData(node->m_data.value,length);
+			char* buffer = getPairData(node->m_data.value, length);
 			if (node->dataOffset == -1)
 			{
 				int ret = file.insert(buffer, length, offset);
 				node->dataOffset = offset;
 				node->dataLength = length;
 				writeNode(node);
+				free(buffer);
 				return ret;
 			}
-			
+
 			int ret = file.write(buffer, node->offset, node->dataLength);
+			free(buffer);
 			return ret;
 		}
 		//template<class TT>
 		//char* getPairData(TT pair, size_t& size);
+		char* getPairData(studentNameInternalTree& pair, size_t& size)
+		{
+			Pair<studentNameInternalTree>* student = (Pair<studentNameInternalTree>*)(int*)(int(&pair) - 4);
+			size = sizeof(int) * 8;
+			int* buffer = (int*)malloc(size);
+			buffer[0] = ((int*)student)[0];
+			buffer[1] = pair.m_root->dataOffset;
+			buffer[2] = pair.m_root->dataLength;
+			buffer[3] = pair.m_root->m_parent != nullptr ? pair.m_root->m_parent->offset : -1;
+			buffer[4] = pair.m_root->m_left != nullptr ? pair.m_root->m_left->offset : -1;
+			buffer[5] = pair.m_root->m_right != nullptr ? pair.m_root->m_right->offset : -1;
+			buffer[6] = pair.m_root->m_height;
+			buffer[7] = pair.m_size;
+			return (char*)buffer;
+		}
 
 		char* getPairData(Student& pair, size_t& size)
 		{
-			Pair<Student>* student = (Pair<Student>*)(int*)(int(&pair)-4);
-			size = sizeof(int) + student->value.ID.GetLength() + 1 + student->value.name.GetLength() + 1 + 2*sizeof(size_t);
+			Pair<Student>* student = (Pair<Student>*)(int*)(int(&pair) - 4);
+			size = sizeof(int) + student->value.ID.GetLength() + 1 + student->value.name.GetLength() + 1 + 2 * sizeof(size_t);
 			char* buffer = (char*)malloc(size);
 			char* p = buffer;
 			((int*)p)[0] = student->key;
@@ -488,11 +542,11 @@ namespace Sdalin {
 			return m_root->m_parent;
 		}
 
-		Node* lRotate(Node* node) ;
+		Node* lRotate(Node* node);
 
-		Node* rRotata(Node* node) ;
+		Node* rRotate(Node* node);
 
-		Node* balance(Node* p) ;
+		Node* balance(Node* p);
 		public:
 		//friend int Pair<int, FileTree<int, Student>>::Hash()
 		//{
@@ -681,16 +735,16 @@ namespace Sdalin {
 					writeNode(parent);
 				}
 				writeNode(right);
-				
+
 				retNode = right;
 				goto End;
 			}
 			else
 			{
 				Node* left = node->m_left;
-				if(node == root())
+				if (node == root())
 				{
-					if(left != nullptr)
+					if (left != nullptr)
 					{
 						left->m_parent = m_root;
 						writeNode(left);
@@ -834,7 +888,7 @@ namespace Sdalin {
 			node->m_parent->m_right = pnode;
 			writeNode(node->m_parent);
 		}
-		
+
 		pnode->m_left = node;
 		node->m_parent = pnode;
 		node->fixHeight();
@@ -845,7 +899,7 @@ namespace Sdalin {
 	}
 
 	template <class Value, class Hash, class less, class equal, class T>
-	typename FileTree<Value, Hash, less, equal, T>::Node* FileTree<Value, Hash, less, equal, T>::rRotata(Node* node) 
+	typename FileTree<Value, Hash, less, equal, T>::Node* FileTree<Value, Hash, less, equal, T>::rRotate(Node* node)
 	{
 		Node* pnode = node->m_left;
 		node->m_left = pnode->m_right;
@@ -883,21 +937,22 @@ namespace Sdalin {
 	}
 
 	template <class Value, class Hash, class less, class equal, class T>
-	typename FileTree<Value, Hash, less, equal, T>::Node* FileTree<Value, Hash, less, equal, T>::balance(Node* p) 
+	typename FileTree<Value, Hash, less, equal, T>::Node* FileTree<Value, Hash, less, equal, T>::balance(Node* p)
 	{
 		p->fixHeight();
 		if (p->bfactor() == 2)
 		{
 			if (p->m_right->bfactor() < 0)
-				p->m_right = rRotata(p->m_right);
+				p->m_right = rRotate(p->m_right);
 			return lRotate(p);
 		}
 		if (p->bfactor() == -2)
 		{
 			if (p->m_left->bfactor() > 0)
 				p->m_left = lRotate(p->m_left);
-			return rRotata(p);
+			return rRotate(p);
 		}
 		return p; // balancing is not required
 	}
+
 }

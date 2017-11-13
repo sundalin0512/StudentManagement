@@ -242,14 +242,30 @@ namespace Sdalin
 			}
 			else
 			{
-				// node is leaf node
-				Node parent = readNode(node.m_parent);
-				if (node.m_inFileOffset == parent.m_leftChild)
-					parent.m_leftChild = -1;
+				size_t left = node.m_leftChild;
+				if (node.m_parent == -1)
+				{
+					if (left != -1)
+					{
+						Node leftNode = readNode(left);
+						leftNode.m_parent = -1;
+						writeNode(leftNode);
+					}
+					m_head.rootNodeOffset = left;
+					writeHead();
+					offset = m_head.rootNodeOffset;
+				}
 				else
-					parent.m_rightChild = -1;
-				writeNode(parent);
-				offset = parent.m_inFileOffset;
+				{
+					// node is leaf node
+					Node parent = readNode(node.m_parent);
+					if (node.m_inFileOffset == parent.m_leftChild)
+						parent.m_leftChild = -1;
+					else
+						parent.m_rightChild = -1;
+					writeNode(parent);
+					offset = parent.m_inFileOffset;
+				}
 				goto End;
 			}
 		}
@@ -329,7 +345,7 @@ namespace Sdalin
 		}
 	End:
 		EmptyNode* emptyNode = (EmptyNode*)&node;
-		memset(emptyNode, 0, Node::size());
+		//memset(emptyNode, 0, Node::size());
 		emptyNode->nextNodeOffset = m_head.firstEmptyNodeOffset;
 		m_head.firstEmptyNodeOffset = node.m_inFileOffset;
 		writeNode(node);
@@ -342,7 +358,7 @@ namespace Sdalin
 		Node pNode = readNode(node.m_rightChild);
 		node.m_rightChild = pNode.m_leftChild;
 
-		if (pNode.m_leftChild == -1)
+		if (pNode.m_leftChild != -1)
 		{
 			Node tmp = readNode(pNode.m_leftChild);
 			tmp.m_parent = node.m_inFileOffset;
@@ -378,12 +394,12 @@ namespace Sdalin
 		return pNode.m_inFileOffset;
 	}
 
-	int UsedFile::rRotata(Node& node)
+	int UsedFile::rRotate(Node& node)
 	{
 		Node pNode = readNode(node.m_leftChild);
 		node.m_leftChild = pNode.m_rightChild;
 
-		if (pNode.m_rightChild == -1)
+		if (pNode.m_rightChild != -1)
 		{
 			Node tmp = readNode(pNode.m_rightChild);
 			tmp.m_parent = node.m_inFileOffset;
@@ -428,14 +444,14 @@ namespace Sdalin
 		if (bfactor(p) == 2)
 		{
 			if (bfactor(pRight) < 0)
-				p.m_rightChild = rRotata(pRight);
+				p.m_rightChild = rRotate(pRight);
 			return lRotate(p);
 		}
 		if (bfactor(p) == -2)
 		{
 			if (bfactor(pLeft) > 0)
 				p.m_leftChild = lRotate(pLeft);
-			return rRotata(p);
+			return rRotate(p);
 		}
 		writeNode(p);
 		writeNode(pLeft);
@@ -871,15 +887,31 @@ namespace Sdalin
 			}
 			else
 			{
-				// node is leaf node
-				Node parent = readNode(node.m_parent_length);
-				if (node.m_inFileOffset == parent.m_leftChild_length)
-					parent.m_leftChild_length = -1;
+				size_t left = node.m_leftChild_length;
+				if (node.m_parent_length == -1)
+				{
+					if (left != -1)
+					{
+						Node leftNode = readNode(left);
+						leftNode.m_parent_length = -1;
+						writeNode(leftNode);
+					}
+					m_head.rootNodeOffset_length = left;
+					writeHead();
+					offset_length = m_head.rootNodeOffset_length;
+				}
 				else
-					parent.m_rightChild_length = -1;
+				{
+					// node is leaf node
+					Node parent = readNode(node.m_parent_length);
+					if (node.m_inFileOffset == parent.m_leftChild_length)
+						parent.m_leftChild_length = -1;
+					else
+						parent.m_rightChild_length = -1;
 
-				writeNode(parent);
-				offset_length = parent.m_inFileOffset;
+					writeNode(parent);
+					offset_length = parent.m_inFileOffset;
+				}
 				goto OffsetBegin;
 			}
 		}
@@ -987,14 +1019,30 @@ namespace Sdalin
 			}
 			else
 			{
-				// node is leaf node
-				Node parent = readNode(node.m_parent_offset);
-				if (node.m_inFileOffset == parent.m_leftChild_offset)
-					parent.m_leftChild_offset = -1;
+				size_t left = node.m_leftChild_offset;
+				if (node.m_parent_offset == -1)
+				{
+					if (left != -1)
+					{
+						Node leftNode = readNode(left);
+						leftNode.m_parent_offset = -1;
+						writeNode(leftNode);
+					}
+					m_head.rootNodeOffset_offset = left;
+					writeHead();
+					offset_offset = m_head.rootNodeOffset_offset;
+				}
 				else
-					parent.m_rightChild_offset = -1;
-				writeNode(parent);
-				offset_offset = parent.m_inFileOffset;
+				{
+					// node is leaf node
+					Node parent = readNode(node.m_parent_offset);
+					if (node.m_inFileOffset == parent.m_leftChild_offset)
+						parent.m_leftChild_offset = -1;
+					else
+						parent.m_rightChild_offset = -1;
+					writeNode(parent);
+					offset_offset = parent.m_inFileOffset;
+				}
 				goto End;
 			}
 		}
@@ -1088,7 +1136,7 @@ namespace Sdalin
 		Node pNode = readNode(node.m_rightChild_length);
 		node.m_rightChild_length = pNode.m_leftChild_length;
 
-		if (pNode.m_leftChild_length == -1)
+		if (pNode.m_leftChild_length != -1)
 		{
 			Node tmp = readNode(pNode.m_leftChild_length);
 			tmp.m_parent_length = node.m_inFileOffset;
@@ -1129,7 +1177,7 @@ namespace Sdalin
 		Node pNode = readNode(node.m_leftChild_length);
 		node.m_leftChild_length = pNode.m_rightChild_length;
 
-		if (pNode.m_rightChild_length == -1)
+		if (pNode.m_rightChild_length != -1)
 		{
 			Node tmp = readNode(pNode.m_rightChild_length);
 			tmp.m_parent_length = node.m_inFileOffset;
@@ -1193,7 +1241,7 @@ namespace Sdalin
 		Node pNode = readNode(node.m_rightChild_offset);
 		node.m_rightChild_offset = pNode.m_leftChild_offset;
 
-		if (pNode.m_leftChild_offset == -1)
+		if (pNode.m_leftChild_offset != -1)
 		{
 			Node tmp = readNode(pNode.m_leftChild_offset);
 			tmp.m_parent_offset = node.m_inFileOffset;
@@ -1234,7 +1282,7 @@ namespace Sdalin
 		Node pNode = readNode(node.m_leftChild_offset);
 		node.m_leftChild_offset = pNode.m_rightChild_offset;
 
-		if (pNode.m_rightChild_offset == -1)
+		if (pNode.m_rightChild_offset != -1)
 		{
 			Node tmp = readNode(pNode.m_rightChild_offset);
 			tmp.m_parent_offset = node.m_inFileOffset;
@@ -1482,7 +1530,7 @@ namespace Sdalin
 	{
 		if (erase(offset))
 		{
-			if(insert(data, size, newOffset))
+			if (insert(data, size, newOffset))
 				return true;
 		}
 		return false;

@@ -5,6 +5,9 @@
 
 namespace Sdalin
 {
+
+
+
 	class Manage
 	{
 		struct RootOffset
@@ -44,8 +47,18 @@ namespace Sdalin
 		void insertStudent(String ID, String name)
 		{
 			Student stu{ ID,name };
-			studentNameTree.insert(stu);
+			studentNameInternalTree a;
+			a.insert(stu);
 			studentIDTree.insert(stu);
+			auto tree = studentNameTree.query(a);
+			if(tree == nullptr)
+				studentNameTree.insert(a);
+			else
+			{
+				tree->m_data.value.insert(stu);
+			}
+			//studentNameTree.insert(stu);
+			
 		}
 		bool deleteStudentFromID(String ID)
 		{
@@ -59,7 +72,7 @@ namespace Sdalin
 			{
 				return success;
 			}
-			 success = studentNameTree.erase(stu);
+			//success = studentNameTree.erase(stu);
 			return success;
 
 		}
@@ -67,12 +80,19 @@ namespace Sdalin
 		private:
 
 		private:
-		FileTree<Student, HashName<Student>, lessName<Student>, equalName<Student>> studentNameTree;
+		//typedef FileTree<Student, HashID<Student>, lessID<Student>, equalID<Student>> studentNameInternalTree;
+		//typedef FileTree<StudentCourse, HashCourseID<StudentCourse>, lessStudentID<StudentCourse>, equalStudentID<StudentCourse>> studentCourseInternalTree;
+		//typedef FileTree<StudentCourse, HashStudentID<StudentCourse>, lessCourseID<StudentCourse>, equalCourseID<StudentCourse>> courseStudentInternalTree;
+
+		FileTree<studentNameInternalTree, HashName<Student>, lessName<Student>, equalName<Student>> studentNameTree;
+
 		FileTree<Student, HashID<Student>, lessID<Student>, equalID<Student>> studentIDTree;
 		FileTree<Course, HashID<Course>, lessID<Course>, equalID<Course>> courseIDTree;
 		FileTree<Course, HashName<Course>, lessName<Course>, equalName<Course>> courseNameTree;
-		FileTree<FileTree<StudentCourse, HashCourseID<StudentCourse>, lessStudentID<StudentCourse>, equalStudentID<StudentCourse>>, TreeHash<FileTree<StudentCourse, HashCourseID<StudentCourse>, lessStudentID<StudentCourse>, equalStudentID<StudentCourse>>>> studentCourseTree;
-		FileTree<FileTree<StudentCourse, HashStudentID<StudentCourse>, lessCourseID<StudentCourse>, equalCourseID<StudentCourse>>, TreeHash<FileTree<StudentCourse, HashStudentID<StudentCourse>, lessCourseID<StudentCourse>, equalCourseID<StudentCourse>>>> courseStudentTree;
+
+		FileTree<studentCourseInternalTree, TreeHash<studentCourseInternalTree>> studentCourseTree;
+
+		FileTree<courseStudentInternalTree, TreeHash<courseStudentInternalTree>> courseStudentTree;
 
 	};
 	extern Manage manage;

@@ -192,6 +192,62 @@ namespace FileTest
 			Assert::AreEqual(-1, node.m_rightChild);
 			Assert::AreEqual(0x18, node.m_parent);
 		}
+		TEST_METHOD(UsedFileInsert2)
+		{
+			UsedFile file("UsedFileInsert2.bin", true);
+			file.insert(4, 55);
+			file.insert(2, 15);
+			file.insert(3, 135);
+			UsedFile::Node node = file.readNode(0x18);
+			Assert::AreEqual(size_t(4), node.m_offset);
+			Assert::AreEqual(size_t(55), node.m_length);
+			Assert::AreEqual(-1, node.m_leftChild);
+			Assert::AreEqual(-1, node.m_rightChild);
+			Assert::AreEqual(0x48, node.m_parent);
+
+
+			node = file.readNode(0x30);
+			Assert::AreEqual(size_t(2), node.m_offset);
+			Assert::AreEqual(size_t(15), node.m_length);
+			Assert::AreEqual(-1, node.m_leftChild);
+			Assert::AreEqual(-1, node.m_rightChild);
+			Assert::AreEqual(0x48, node.m_parent);
+
+			node = file.readNode(0x48);
+			Assert::AreEqual(size_t(3), node.m_offset);
+			Assert::AreEqual(size_t(135), node.m_length);
+			Assert::AreEqual(0x30, node.m_leftChild);
+			Assert::AreEqual(0x18, node.m_rightChild);
+			Assert::AreEqual(-1, node.m_parent);
+		}
+		TEST_METHOD(UsedFileInsert3)
+		{
+			UsedFile file("UsedFileInsert2.bin", true);
+			file.insert(4, 55);
+			file.insert(6, 15);
+			file.insert(5, 135);
+			UsedFile::Node node = file.readNode(0x18);
+			Assert::AreEqual(size_t(4), node.m_offset);
+			Assert::AreEqual(size_t(55), node.m_length);
+			Assert::AreEqual(-1, node.m_leftChild);
+			Assert::AreEqual(-1, node.m_rightChild);
+			Assert::AreEqual(0x48, node.m_parent);
+
+
+			node = file.readNode(0x30);
+			Assert::AreEqual(size_t(6), node.m_offset);
+			Assert::AreEqual(size_t(15), node.m_length);
+			Assert::AreEqual(-1, node.m_leftChild);
+			Assert::AreEqual(-1, node.m_rightChild);
+			Assert::AreEqual(0x48, node.m_parent);
+
+			node = file.readNode(0x48);
+			Assert::AreEqual(size_t(5), node.m_offset);
+			Assert::AreEqual(size_t(135), node.m_length);
+			Assert::AreEqual(0x18, node.m_leftChild);
+			Assert::AreEqual(0x30, node.m_rightChild);
+			Assert::AreEqual(-1, node.m_parent);
+		}
 
 		TEST_METHOD(UsedFileInsertBalance)
 		{
