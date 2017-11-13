@@ -12,7 +12,6 @@ namespace ManageTest
 
 		TEST_METHOD(StudentInsertTest)
 		{
-			Manage manage("StudentInsertTest.bin",true);
 			manage.insertStudent("123456", "aassdd");
 			int a = 0;
 		}

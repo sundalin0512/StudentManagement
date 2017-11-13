@@ -123,9 +123,9 @@ namespace Sdalin
 	int String::Hash() const
 	{
 		int ret = 4581523;
-		for (int i = 0; i < GetLength(); i++)
+		for (int i = 0; i <= GetLength(); i++)
 		{
-			ret = (ret + m_data[i]) * (m_data[i] == 0 ? 1 : m_data[i]);
+			ret = (ret + int(m_data[i])) * int(m_data[i] == 0 ? 1 : m_data[i]);
 		}
 		return ret;
 	}

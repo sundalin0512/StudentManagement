@@ -3,6 +3,6 @@
 
 namespace Sdalin
 {
-	
+	Manage manage("data.bin", true);
 
 }

@@ -119,6 +119,7 @@ namespace Sdalin
 
 	int UsedFile::insert(Node& node)
 	{
+		const int offset = node.m_offset;
 		const int length = node.m_length;
 		if (length <= 0)
 			throw "invalid length";
@@ -139,35 +140,35 @@ namespace Sdalin
 			{
 				thisNode = nextNode;
 				balanceNodesOffset.push(thisNode.m_inFileOffset);
-				if (thisNode.m_offset == length)
+				if (thisNode.m_offset == offset)
 				{
 					if (thisNode.m_leftChild != -1)
 						nextNode = readNode(thisNode.m_leftChild);
 					else
-						nextNode.m_offset = -1; //用length=-1来标记结束
+						nextNode.m_offset = -1; //用offset=-1来标记结束
 				}
-				else if (thisNode.m_offset > length)
+				else if (thisNode.m_offset > offset)
 				{
 					if (thisNode.m_leftChild != -1)
 						nextNode = readNode(thisNode.m_leftChild);
 					else
-						nextNode.m_offset = -1; //用length=-1来标记结束
+						nextNode.m_offset = -1; //用offset=-1来标记结束
 				}
-				else if (thisNode.m_offset < length)
+				else if (thisNode.m_offset < offset)
 				{
 					if (thisNode.m_rightChild != -1)
 						nextNode = readNode(thisNode.m_rightChild);
 					else
-						nextNode.m_offset = -1; //用length=-1来标记结束
+						nextNode.m_offset = -1; //用offset=-1来标记结束
 				}
 			}
 			insertNewNode(node);
-			if (thisNode.m_offset > length)
+			if (thisNode.m_offset > offset)
 			{
 				node.m_parent = thisNode.m_inFileOffset;
 				thisNode.m_leftChild = node.m_inFileOffset;
 			}
-			else if (thisNode.m_offset < length)
+			else if (thisNode.m_offset < offset)
 			{
 				node.m_parent = thisNode.m_inFileOffset;
 				thisNode.m_rightChild = node.m_inFileOffset;
@@ -661,21 +662,21 @@ namespace Sdalin
 					if (thisNode_offset.m_leftChild_offset != -1)
 						nextNode_offset = readNode(thisNode_offset.m_leftChild_offset);
 					else
-						nextNode_offset.m_offset = -1; //用length=-1来标记结束
+						nextNode_offset.m_offset = -1; //用offset=-1来标记结束
 				}
 				else if (thisNode_offset.m_offset > offset)
 				{
 					if (thisNode_offset.m_leftChild_offset != -1)
 						nextNode_offset = readNode(thisNode_offset.m_leftChild_offset);
 					else
-						nextNode_offset.m_offset = -1; //用length=-1来标记结束
+						nextNode_offset.m_offset = -1; //用offset=-1来标记结束
 				}
 				else if (thisNode_offset.m_offset < offset)
 				{
 					if (thisNode_offset.m_rightChild_offset != -1)
 						nextNode_offset = readNode(thisNode_offset.m_rightChild_offset);
 					else
-						nextNode_offset.m_offset = -1; //用length=-1来标记结束
+						nextNode_offset.m_offset = -1; //用offset=-1来标记结束
 				}
 			}
 			insertNewNode(node);
@@ -1521,7 +1522,7 @@ namespace Sdalin
 			}
 			else
 			{
-				write(data, offset, size);
+				_write(offset, data, size);
 				return true;
 			}
 		}
