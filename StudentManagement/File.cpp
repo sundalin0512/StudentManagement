@@ -33,7 +33,7 @@ namespace Sdalin
 		stream.write((char*)buffer, bytesToWrite);
 		if (stream.bad())
 			return false;
-		stream.flush();
+		//stream.flush();
 		return true;
 	}
 

@@ -110,7 +110,7 @@ namespace Sdalin {
 	{
 		String studentID;
 		String courseID;
-		int grade;
+		int grade = -1;
 
 		int hashStudentID() const
 		{

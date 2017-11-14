@@ -3,6 +3,7 @@
 #include "../DataStruct/Stack.hpp"
 #include "types.h"
 #include "File.h"
+#include <cassert>
 
 namespace Sdalin {
 	extern class Manage;
@@ -94,6 +95,14 @@ namespace Sdalin {
 		{
 			return value;
 		}
+		operator Value&()
+		{
+			return value;
+		}
+		operator Value&() const
+		{
+			return value;
+		}
 
 	};
 
@@ -116,9 +125,9 @@ namespace Sdalin {
 	class FileTree;
 
 	typedef FileTree<Student, HashID<Student>, lessID<Student>, equalID<Student>> studentNameInternalTree;
-	typedef FileTree<StudentCourse, HashCourseID<StudentCourse>, lessStudentID<StudentCourse>, equalStudentID<StudentCourse>> studentCourseInternalTree;
-	typedef FileTree<StudentCourse, HashStudentID<StudentCourse>, lessCourseID<StudentCourse>, equalCourseID<StudentCourse>> courseStudentInternalTree;
-
+	typedef FileTree<StudentCourse, HashStudentID<StudentCourse>, lessStudentID<StudentCourse>, equalStudentID<StudentCourse>> courseStudentInternalTree;
+	typedef FileTree<StudentCourse, HashCourseID<StudentCourse>, lessCourseID<StudentCourse>, equalCourseID<StudentCourse>> studentCourseInternalTree;
+	typedef FileTree<Course, HashID<Course>, lessID<Course>, equalID<Course>> courseNameInternalTree;
 
 
 	template <class Value = int, class Hash = HashTag<Value>, class less = lessTag<Value>, class equal = equalTag<Value>, class T = Pair<Value, Hash, less, equal>>
@@ -129,6 +138,7 @@ namespace Sdalin {
 		friend struct TreeHash<studentNameInternalTree>;
 		friend struct TreeHash<studentCourseInternalTree>;
 		friend struct TreeHash<courseStudentInternalTree>;
+		friend struct TreeHash<courseNameInternalTree>;
 		friend class Manage;
 		struct Node
 		{
@@ -138,11 +148,10 @@ namespace Sdalin {
 			Node* m_left;
 			Node* m_right;
 			int m_height;
-			bool isReady;
-			bool isModify;
+			bool isReady = false;
 			T m_data;
 			size_t offset;
-			Node() : isReady(false), isModify(false), m_data(T(Value()))
+			Node() : m_data(T(Value()))
 			{
 				m_parent = nullptr;
 				m_left = nullptr;
@@ -151,15 +160,13 @@ namespace Sdalin {
 				dataOffset = -1;
 				dataLength = -1;
 				m_height = 0;
-				isReady = true;
-				isModify = true;
 			}
 
 			//explicit Node(const Node& other) : Node()
 			//{
 			//	m_data = other.m_data;
 			//}
-			explicit Node(const T& data) : isReady(false), isModify(false), m_data(T(data))
+			explicit Node(const T& data) : m_data(T(data))
 			{
 				m_parent = nullptr;
 				m_left = nullptr;
@@ -168,8 +175,6 @@ namespace Sdalin {
 				dataOffset = -1;
 				dataLength = -1;
 				m_height = 0;
-				isReady = true;
-				isModify = true;
 			}
 
 			int bfactor() const;
@@ -194,8 +199,8 @@ namespace Sdalin {
 		Node* m_root;
 		size_t m_size;
 		private:
-		
-		
+
+
 		File& file;
 
 		public:
@@ -261,10 +266,70 @@ namespace Sdalin {
 		{
 			return sizeof(int) * 6;
 		}
+		bool readTreeFromFile()
+		{
+			if (m_size == 0)
+				return false;
+			Node *tmp = new Node;
+			readNode(tmp, (size_t)m_root->m_parent);
+			m_root->m_parent = tmp;
+			m_root->m_parent->m_parent = m_root;
+			readNodeFromFile(root());
+			//while()
+			return true;
+		}
+		bool readTreeTreeFromFile()
+		{
+			if (m_size == 0)
+				return false;
+			Node *tmp = new Node;
+			readNode(tmp, (size_t)m_root->m_parent);
+			m_root->m_parent = tmp;
+			m_root->m_parent->m_parent = m_root;
+			
+			readNodeFromFile(root());
+			if(root() != nullptr)
+			{
+				Queue<Node*> que = layer();
+				while(!que.empty())
+				{
+					Node* p = que.front();
+					p->m_data.value.readTreeFromFile();
+					que.pop();
+					int ppp = 0;
+				}
+			}
+			//while()
+			return true;
+		}
+		bool readNodeFromFile(Node* node)
+		{
+			if (node == nullptr)
+				return false;
+			readData(node);
+			if (node->m_left != nullptr)
+			{
+				Node *tmp = new Node;
+				readNode(tmp, (size_t)node->m_left);
+				node->m_left = tmp;
+				tmp->m_parent = node;
+				readData(tmp);
+				readNodeFromFile(tmp);
+			}
+			if (node->m_right != nullptr)
+			{
+				Node *tmp = new Node;
+				readNode(tmp, (size_t)node->m_right);
+				node->m_right = tmp;
+				tmp->m_parent = node;
+				readData(tmp);
+				readNodeFromFile(tmp);
+			}
+		}
 		bool writeRoot()
 		{
 			size_t offset = 0;
-			size_t length = nodeSize();
+			size_t length = nodeSize() + sizeof(size_t);
 			Node* node = (Node*)malloc(sizeof(Node));
 			memcpy(node, m_root, sizeof(Node));
 			if (node->m_parent != nullptr)
@@ -273,6 +338,7 @@ namespace Sdalin {
 				node->m_left = (Node*)node->m_left->offset;
 			if (node->m_right != nullptr)
 				node->m_right = (Node*)node->m_right->offset;
+			*(int*)&(node->isReady) = m_size;
 			if (m_root->offset == -1)
 			{
 				int ret = file.insert(node, length, offset);
@@ -287,7 +353,19 @@ namespace Sdalin {
 		bool readRoot(size_t offset)
 		{
 			size_t size = 0;
-			return file.read(m_root, offset, nodeSize(), size);
+			Node* node = (Node*)malloc(sizeof(Node));
+			bool ret = file.read(node, offset, nodeSize() + sizeof(size_t), size);
+			if (!ret)
+			{
+				free(node);
+				return ret;
+			}
+			memcpy(m_root, node, nodeSize());
+			m_root->offset = offset;
+			m_size = *(int*)&(node->isReady);
+			free(node);
+			return ret;
+
 		}
 		bool writeNode(Node* node)
 		{
@@ -334,87 +412,159 @@ namespace Sdalin {
 				return ret;
 			}
 
-			int ret = file.write(buffer, node->offset, node->dataLength);
+			int ret = file.write(buffer, node->dataOffset, node->dataLength);
 			free(buffer);
 			return ret;
 		}
+		bool readData(Node* node)
+		{
+			if (node->dataLength == -1)
+				return false;
+			int* buffer = (int*)malloc(node->dataLength);
+			size_t size;
+			int ret = file.read(buffer, node->dataOffset, node->dataLength, size);
+			setPairData(node->m_data, buffer, size);
+			free(buffer);
+			return false;
+		}
 		//template<class TT>
 		//char* getPairData(TT pair, size_t& size);
-		char* getPairData(studentNameInternalTree& pair, size_t& size)
+
+		int* setPairData(studentNameInternalTree& pair, int* buffer, size_t& size)
 		{
 			Pair<studentNameInternalTree>* student = (Pair<studentNameInternalTree>*)(int*)(int(&pair) - 4);
-			size = sizeof(int) * 8;
-			int* buffer = (int*)malloc(size);
-			buffer[0] = ((int*)student)[0];
-			buffer[1] = pair.m_root->dataOffset;
-			buffer[2] = pair.m_root->dataLength;
-			buffer[3] = pair.m_root->m_parent != nullptr ? pair.m_root->m_parent->offset : -1;
-			buffer[4] = pair.m_root->m_left != nullptr ? pair.m_root->m_left->offset : -1;
-			buffer[5] = pair.m_root->m_right != nullptr ? pair.m_root->m_right->offset : -1;
-			buffer[6] = pair.m_root->m_height;
-			buffer[7] = pair.m_size;
-			return (char*)buffer;
+			assert(size == 0x20);
+			((int*)student)[0] = buffer[0];
+			pair.m_root->dataOffset = buffer[1];
+			pair.m_root->dataLength = buffer[2];
+			*(int*)&(pair.m_root->m_parent) = buffer[3];
+			*(int*)&(pair.m_root->m_left  ) = buffer[4];
+			*(int*)&(pair.m_root->m_right )=  buffer[5];
+			pair.m_root->m_height = buffer[6];
+			pair.m_size = buffer[7];
+			return buffer;
 		}
 
-		char* getPairData(Student& pair, size_t& size)
+		int* setPairData(courseNameInternalTree& pair, int* buffer, size_t& size)
+		{
+			Pair<courseNameInternalTree>* student = (Pair<courseNameInternalTree>*)(int*)(int(&pair) - 4);
+			assert(size == 0x20);
+			((int*)student)[0] = buffer[0];
+			pair.m_root->dataOffset = buffer[1];
+			pair.m_root->dataLength = buffer[2];
+			*(int*)&(pair.m_root->m_parent) = buffer[3];
+			*(int*)&(pair.m_root->m_left) = buffer[4];
+			*(int*)&(pair.m_root->m_right) = buffer[5];
+			pair.m_root->m_height = buffer[6];
+			pair.m_size = buffer[7];
+			return buffer;
+		}
+
+		int* setPairData(courseStudentInternalTree& pair, int* buffer, size_t& size)
+		{
+			Pair<courseStudentInternalTree>* student = (Pair<courseStudentInternalTree>*)(int*)(int(&pair) - 4);
+			assert(size == 0x20);
+			((int*)student)[0] = buffer[0];
+			pair.m_root->dataOffset = buffer[1];
+			pair.m_root->dataLength = buffer[2];
+			*(int*)&(pair.m_root->m_parent) = buffer[3];
+			*(int*)&(pair.m_root->m_left) = buffer[4];
+			*(int*)&(pair.m_root->m_right) = buffer[5];
+			pair.m_root->m_height = buffer[6];
+			pair.m_size = buffer[7];
+			return buffer;
+		}
+
+		int* setPairData(studentCourseInternalTree& pair, int* buffer, size_t& size)
+		{
+			Pair<studentCourseInternalTree>* student = (Pair<studentCourseInternalTree>*)(int*)(int(&pair) - 4);
+			assert(size == 0x20);
+			((int*)student)[0] = buffer[0];
+			pair.m_root->dataOffset = buffer[1];
+			pair.m_root->dataLength = buffer[2];
+			*(int*)&(pair.m_root->m_parent) = buffer[3];
+			*(int*)&(pair.m_root->m_left) = buffer[4];
+			*(int*)&(pair.m_root->m_right) = buffer[5];
+			pair.m_root->m_height = buffer[6];
+			pair.m_size = buffer[7];
+			return buffer;
+		}
+
+		int* setPairData(Student& pair, int* buffer, size_t& size)
 		{
 			Pair<Student>* student = (Pair<Student>*)(int*)(int(&pair) - 4);
-			size = sizeof(int) + student->value.ID.GetLength() + 1 + student->value.name.GetLength() + 1 + 2 * sizeof(size_t);
-			char* buffer = (char*)malloc(size);
-			char* p = buffer;
-			((int*)p)[0] = student->key;
+			char* p = (char*)buffer;
+			student->key = ((int*)p)[0];
 			p += sizeof(int*);
-			int length = pair.ID.GetLength() + 1;
-			((int*)p)[0] = length;
+			int length = ((int*)p)[0];
 			p += sizeof(int*);
-			memcpy(p, pair.ID.GetData(), length);
+			pair.ID = p;
+			assert(strlen(p) == pair.ID.GetLength());
+		
 			p += length;
-			length = pair.name.GetLength() + 1;
-			((int*)p)[0] = length;
+			length = ((int*)p)[0];
 			p += sizeof(int*);
-			memcpy(p, pair.name.GetData(), length);
+			pair.name = p;
+			assert(strlen(p) == pair.name.GetLength());
+			assert(size == sizeof(int) + student->value.ID.GetLength() + 1 + student->value.name.GetLength() + 1 + 2 * sizeof(size_t));
 			return buffer;
 		}
-		char* getPairData(Course& pair, size_t& size)
+		int* setPairData(Course& pair, int* buffer, size_t& size)
 		{
 			Pair<Course>* student = (Pair<Course>*)(int(&pair) - 4);
-			size = sizeof(int) + student->value.ID.GetLength() + 1 + student->value.name.GetLength() + 1 + 2 * sizeof(size_t);
-			char* buffer = (char*)malloc(size);
-			char* p = buffer;
-			((int*)p)[0] = student->key;
+			char* p = (char*)buffer;
+			student->key = ((int*)p)[0];
 			p += sizeof(int*);
-			int length = pair.ID.GetLength() + 1;
-			((int*)p)[0] = length;
+			int length = ((int*)p)[0];
 			p += sizeof(int*);
-			memcpy(p, pair.ID.GetData(), length);
+			pair.ID = p;
+			assert(strlen(p) == pair.ID.GetLength());
+
 			p += length;
-			length = pair.name.GetLength() + 1;
-			((int*)p)[0] = length;
+			length = ((int*)p)[0];
 			p += sizeof(int*);
-			memcpy(p, pair.name.GetData(), length);
+			pair.name = p;
+			assert(strlen(p) == pair.name.GetLength());
+			assert(size == sizeof(int) + student->value.ID.GetLength() + 1 + student->value.name.GetLength() + 1 + 2 * sizeof(size_t));
 			return buffer;
 		}
-		char* getPairData(StudentCourse& pair, size_t& size)
+		int* setPairData(StudentCourse& pair, int* buffer, size_t& size)
 		{
 			Pair<StudentCourse>* student = (Pair<StudentCourse>*)(int(&pair) - 4);
-			size = sizeof(int) + student->value.studentID.GetLength() + 1 + student->value.courseID.GetLength() + 1 + 3 * sizeof(size_t);
-			char* buffer = (char*)malloc(size);
-			char* p = buffer;
-			((int*)p)[0] = student->key;
+			
+			char* p = (char*)buffer;
+			student->key = ((int*)p)[0];
 			p += sizeof(int*);
-			int length = pair.studentID.GetLength() + 1;
-			((int*)p)[0] = length;
+			int length = ((int*)p)[0];
 			p += sizeof(int*);
-			memcpy(p, pair.studentID.GetData(), length);
+			pair.studentID = p;
+			assert(strlen(p) == pair.studentID.GetLength());
+
 			p += length;
-			length = pair.courseID.GetLength() + 1;
-			((int*)p)[0] = length;
+			length = ((int*)p)[0];
 			p += sizeof(int*);
-			memcpy(p, pair.courseID.GetData(), length);
+			pair.courseID = p;
+			assert(strlen(p) == pair.courseID.GetLength());
 			p += length;
-			((int*)p)[0] = pair.grade;
+			pair.grade = ((int*)p)[0];
+			assert(size == sizeof(int) + student->value.studentID.GetLength() + 1 + student->value.courseID.GetLength() + 1 + 3 * sizeof(size_t));
 			return buffer;
 		}
+
+		char* getPairData(studentNameInternalTree& pair, size_t& size);
+
+		char* getPairData(courseNameInternalTree& pair, size_t& size);
+
+		char* getPairData(courseStudentInternalTree& pair, size_t& size);
+
+		char* getPairData(studentCourseInternalTree& pair, size_t& size);
+
+		char* getPairData(Student& pair, size_t& size);
+
+		char* getPairData(Course& pair, size_t& size);
+
+		char* getPairData(StudentCourse& pair, size_t& size);
+
 		bool isEmpty() const;
 
 		Node* insert(const T& data)
@@ -473,6 +623,53 @@ namespace Sdalin {
 			writeNode(node);
 			return node;
 		}
+
+		Node* insertNoFile(const T& data)
+		{
+			Node* node = new Node(data);
+			if (root() == nullptr)
+			{
+				root() = node;
+				root()->m_parent = m_root;
+				m_size++;
+				writeRoot();
+				return root();
+			}
+			Node* parent = root();
+			Node* nextNode = parent;
+			Stack<Node*> balanceNodes;
+			while (nextNode != nullptr)
+			{
+				parent = nextNode;
+				balanceNodes.push(parent);
+				if (parent->m_data == data)
+				{
+					delete node;
+					return parent;
+				}
+				else if (parent->m_data > data)
+				{
+					nextNode = parent->m_left;
+				}
+				else if (parent->m_data < data)
+				{
+					nextNode = parent->m_right;
+				}
+			}
+			if (parent->m_data > data)
+			{
+				parent->m_left = node;
+				node->m_parent = parent;
+			}
+			else if (parent->m_data < data)
+			{
+				parent->m_right = node;
+				node->m_parent = parent;
+			}
+			m_size++;
+			return node;
+		}
+
 		bool erase(const T& data)
 		{
 			Node* node = query(data);
@@ -567,6 +764,140 @@ namespace Sdalin {
 		const int lHeight = nodeHeight(m_left);
 		const int rHeight = nodeHeight(m_right);
 		m_height = (lHeight > rHeight ? lHeight : rHeight) + 1;
+	}
+
+	template <class Value, class Hash, class less, class equal, class T>
+	char* FileTree<Value, Hash, less, equal, T>::getPairData(studentNameInternalTree& pair, size_t& size)
+	{
+		Pair<studentNameInternalTree>* student = (Pair<studentNameInternalTree>*)(int*)(int(&pair) - 4);
+		size = sizeof(int) * 8;
+		int* buffer = (int*)malloc(size);
+		buffer[0] = ((int*)student)[0];
+		buffer[1] = pair.m_root->dataOffset;
+		buffer[2] = pair.m_root->dataLength;
+		buffer[3] = pair.m_root->m_parent != nullptr ? pair.m_root->m_parent->offset : -1;
+		buffer[4] = pair.m_root->m_left != nullptr ? pair.m_root->m_left->offset : -1;
+		buffer[5] = pair.m_root->m_right != nullptr ? pair.m_root->m_right->offset : -1;
+		buffer[6] = pair.m_root->m_height;
+		buffer[7] = pair.m_size;
+		return (char*)buffer;
+	}
+
+	template <class Value, class Hash, class less, class equal, class T>
+	char* FileTree<Value, Hash, less, equal, T>::getPairData(courseNameInternalTree& pair, size_t& size)
+	{
+		Pair<courseNameInternalTree>* student = (Pair<courseNameInternalTree>*)(int*)(int(&pair) - 4);
+		size = sizeof(int) * 8;
+		int* buffer = (int*)malloc(size);
+		buffer[0] = ((int*)student)[0];
+		buffer[1] = pair.m_root->dataOffset;
+		buffer[2] = pair.m_root->dataLength;
+		buffer[3] = pair.m_root->m_parent != nullptr ? pair.m_root->m_parent->offset : -1;
+		buffer[4] = pair.m_root->m_left != nullptr ? pair.m_root->m_left->offset : -1;
+		buffer[5] = pair.m_root->m_right != nullptr ? pair.m_root->m_right->offset : -1;
+		buffer[6] = pair.m_root->m_height;
+		buffer[7] = pair.m_size;
+		return (char*)buffer;
+	}
+
+	template <class Value, class Hash, class less, class equal, class T>
+	char* FileTree<Value, Hash, less, equal, T>::getPairData(courseStudentInternalTree& pair, size_t& size)
+	{
+		Pair<courseStudentInternalTree>* student = (Pair<courseStudentInternalTree>*)(int*)(int(&pair) - 4);
+		size = sizeof(int) * 8;
+		int* buffer = (int*)malloc(size);
+		buffer[0] = ((int*)student)[0];
+		buffer[1] = pair.m_root->dataOffset;
+		buffer[2] = pair.m_root->dataLength;
+		buffer[3] = pair.m_root->m_parent != nullptr ? pair.m_root->m_parent->offset : -1;
+		buffer[4] = pair.m_root->m_left != nullptr ? pair.m_root->m_left->offset : -1;
+		buffer[5] = pair.m_root->m_right != nullptr ? pair.m_root->m_right->offset : -1;
+		buffer[6] = pair.m_root->m_height;
+		buffer[7] = pair.m_size;
+		return (char*)buffer;
+	}
+
+	template <class Value, class Hash, class less, class equal, class T>
+	char* FileTree<Value, Hash, less, equal, T>::getPairData(studentCourseInternalTree& pair, size_t& size)
+	{
+		Pair<studentCourseInternalTree>* student = (Pair<studentCourseInternalTree>*)(int*)(int(&pair) - 4);
+		size = sizeof(int) * 8;
+		int* buffer = (int*)malloc(size);
+		buffer[0] = ((int*)student)[0];
+		buffer[1] = pair.m_root->dataOffset;
+		buffer[2] = pair.m_root->dataLength;
+		buffer[3] = pair.m_root->m_parent != nullptr ? pair.m_root->m_parent->offset : -1;
+		buffer[4] = pair.m_root->m_left != nullptr ? pair.m_root->m_left->offset : -1;
+		buffer[5] = pair.m_root->m_right != nullptr ? pair.m_root->m_right->offset : -1;
+		buffer[6] = pair.m_root->m_height;
+		buffer[7] = pair.m_size;
+		return (char*)buffer;
+	}
+
+	template <class Value, class Hash, class less, class equal, class T>
+	char* FileTree<Value, Hash, less, equal, T>::getPairData(Student& pair, size_t& size)
+	{
+		Pair<Student>* student = (Pair<Student>*)(int*)(int(&pair) - 4);
+		size = sizeof(int) + student->value.ID.GetLength() + 1 + student->value.name.GetLength() + 1 + 2 * sizeof(size_t);
+		char* buffer = (char*)malloc(size);
+		char* p = buffer;
+		((int*)p)[0] = student->key;
+		p += sizeof(int*);
+		int length = pair.ID.GetLength() + 1;
+		((int*)p)[0] = length;
+		p += sizeof(int*);
+		memcpy(p, pair.ID.GetData(), length);
+		p += length;
+		length = pair.name.GetLength() + 1;
+		((int*)p)[0] = length;
+		p += sizeof(int*);
+		memcpy(p, pair.name.GetData(), length);
+		return buffer;
+	}
+
+	template <class Value, class Hash, class less, class equal, class T>
+	char* FileTree<Value, Hash, less, equal, T>::getPairData(Course& pair, size_t& size)
+	{
+		Pair<Course>* student = (Pair<Course>*)(int(&pair) - 4);
+		size = sizeof(int) + student->value.ID.GetLength() + 1 + student->value.name.GetLength() + 1 + 2 * sizeof(size_t);
+		char* buffer = (char*)malloc(size);
+		char* p = buffer;
+		((int*)p)[0] = student->key;
+		p += sizeof(int*);
+		int length = pair.ID.GetLength() + 1;
+		((int*)p)[0] = length;
+		p += sizeof(int*);
+		memcpy(p, pair.ID.GetData(), length);
+		p += length;
+		length = pair.name.GetLength() + 1;
+		((int*)p)[0] = length;
+		p += sizeof(int*);
+		memcpy(p, pair.name.GetData(), length);
+		return buffer;
+	}
+
+	template <class Value, class Hash, class less, class equal, class T>
+	char* FileTree<Value, Hash, less, equal, T>::getPairData(StudentCourse& pair, size_t& size)
+	{
+		Pair<StudentCourse>* student = (Pair<StudentCourse>*)(int(&pair) - 4);
+		size = sizeof(int) + student->value.studentID.GetLength() + 1 + student->value.courseID.GetLength() + 1 + 3 * sizeof(
+			size_t);
+		char* buffer = (char*)malloc(size);
+		char* p = buffer;
+		((int*)p)[0] = student->key;
+		p += sizeof(int*);
+		int length = pair.studentID.GetLength() + 1;
+		((int*)p)[0] = length;
+		p += sizeof(int*);
+		memcpy(p, pair.studentID.GetData(), length);
+		p += length;
+		length = pair.courseID.GetLength() + 1;
+		((int*)p)[0] = length;
+		p += sizeof(int*);
+		memcpy(p, pair.courseID.GetData(), length);
+		p += length;
+		((int*)p)[0] = pair.grade;
+		return buffer;
 	}
 
 	template <class Value, class Hash, class less, class equal, class T>
